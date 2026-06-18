@@ -363,7 +363,14 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
     if (filterUnderstaffedOnly) {
       const countMorning = morningList.length;
       const countEvening = eveningList.length;
-      if ((countMorning + countEvening) >= 12) return false;
+      // Show day if at least one shift has less than 12 people (and is > 0, to avoid empty shifts if any)
+      const morningUnderstaffed = countMorning > 0 && countMorning < 12;
+      const eveningUnderstaffed = countEvening > 0 && countEvening < 12;
+      
+      // If neither shift is understaffed (e.g. both >= 12, or both 0)
+      if (!morningUnderstaffed && !eveningUnderstaffed) {
+        return false;
+      }
     }
     
     return true;
