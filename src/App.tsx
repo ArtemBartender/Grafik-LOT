@@ -352,20 +352,20 @@ export default function App() {
   const plLocalMonth = new Intl.DateTimeFormat('pl-PL', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="min-h-screen bg-[#0b0d10] text-slate-100 flex flex-col font-sans select-none">
+    <div className="min-h-screen text-slate-100 flex flex-col font-sans select-none relative z-0">
       {/* BRANDING TOP HEADER ROW */}
-      <header className="bg-slate-900 border-b border-slate-850 px-6 py-4 flex items-center justify-between sticky top-0 z-40 backdrop-blur-md bg-opacity-90">
-        <div className="flex items-center gap-2">
+      <header className="px-6 py-4 flex items-center justify-between sticky top-0 z-40 bg-slate-950/40 backdrop-blur-md border-b-[1px] border-b-[#D4AF37]/50 border-t-[1px] border-t-[#D4AF37]/50 shadow-[0_4px_30px_rgba(212,175,55,0.05)]">
+        <div className="flex items-center gap-3">
           {/* Logo badge */}
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-500/80 to-emerald-400/80 flex items-center justify-center font-black text-slate-950 font-mono text-sm leading-none">
-            L
+          <div className="w-8 h-8 flex items-center justify-center font-black text-[#D4AF37] font-mono text-xl opacity-90 drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
+            ✈
           </div>
-          <div>
-            <h1 className="text-sm font-black tracking-wider text-slate-100 uppercase font-mono">
-              Grafik LOT
+          <div className="border-l border-[#D4AF37]/30 pl-3">
+            <h1 className="text-sm font-black tracking-[0.15em] text-slate-100 uppercase font-mono">
+              LOT BUSINESS LOUNGE
             </h1>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none">
-              Warszawa Lounge Scheduler
+            <p className="text-[9px] text-[#D4AF37]/80 font-bold uppercase tracking-[0.3em] leading-none mt-0.5">
+              Warszawa Scheduler
             </p>
           </div>
         </div>
@@ -375,14 +375,14 @@ export default function App() {
           <div className="text-right">
             <span className="text-xs text-slate-400">Zalogowany: </span>
             <strong className="text-xs text-slate-200">{myName}</strong>
-            <div className="text-[10px] font-bold text-slate-550 uppercase">
-              Rola: <span className="text-emerald-400 font-extrabold">{role === 'admin' ? 'Michał / Robert (Admin)' : role === 'coordinator' ? 'Koordynator' : 'Pracownik (Waiters/Bar)'}</span>
+            <div className="text-[10px] font-bold text-slate-500 uppercase flex justify-end gap-1 mt-0.5">
+              Rola: <span className="text-[#D4AF37] font-extrabold">{role === 'admin' ? 'Michał / Robert (Admin)' : role === 'coordinator' ? 'Koordynator' : 'Pracownik (Waiters/Bar)'}</span>
             </div>
           </div>
 
           <button 
             onClick={() => setShowPassModal(true)}
-            className="px-3 py-1.5 bg-slate-850 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-lg transition"
+            className="px-3 py-1.5 bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 text-xs font-semibold rounded-lg transition"
           >
             Hasło 🔑
           </button>
@@ -398,7 +398,7 @@ export default function App() {
         {/* MOBILE HAMBURGER BUTTON */}
         <button 
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 text-slate-300 hover:text-white"
+          className="md:hidden p-2 text-[#D4AF37] hover:text-white transition-colors"
         >
           {mobileMenuOpen ? '✕' : '☰'}
         </button>
@@ -406,24 +406,24 @@ export default function App() {
 
       {/* MOBILE EXPANDED MENU TRAY */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-slate-900 border-b border-slate-800 p-4 space-y-3 animate-fade-in text-sm font-semibold">
-          <div className="pb-2 border-b border-slate-850 select-none">
+        <div className="md:hidden bg-[#0a1526]/95 backdrop-blur-xl border-b border-[#D4AF37]/20 p-4 space-y-3 animate-fade-in text-sm font-semibold shadow-2xl">
+          <div className="pb-2 border-b border-[#D4AF37]/10 select-none">
             <p className="text-slate-400 text-xs">Menu zalogowanego:</p>
             <p className="text-white font-bold">{myName} ({role})</p>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => { setActiveTab('start'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'start' ? 'bg-blue-500/10 text-white' : 'text-slate-400'}`}>Dziś w pracy</button>
-            <button onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'dashboard' ? 'bg-blue-500/10 text-white' : 'text-slate-400'}`}>Mój grafik</button>
-            <button onClick={() => { setActiveTab('calendar'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'calendar' ? 'bg-blue-500/10 text-white' : 'text-slate-400'}`}>Grafik ogólny</button>
+            <button onClick={() => { setActiveTab('start'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'start' ? 'bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20 shadow-[inset_0_0_10px_rgba(212,175,55,0.1)]' : 'text-slate-400'}`}>Dziś w pracy</button>
+            <button onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'dashboard' ? 'bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20 shadow-[inset_0_0_10px_rgba(212,175,55,0.1)]' : 'text-slate-400'}`}>Mój grafik</button>
+            <button onClick={() => { setActiveTab('calendar'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'calendar' ? 'bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20 shadow-[inset_0_0_10px_rgba(212,175,55,0.1)]' : 'text-slate-400'}`}>Grafik ogólny</button>
             <button 
               onClick={() => { setActiveTab('proposals'); setMobileMenuOpen(false); }} 
               className={`px-3 py-2 rounded-lg text-left flex items-center justify-between ${
-                activeTab === 'proposals' ? 'bg-blue-500/10 text-white' : 'text-slate-400'
+                activeTab === 'proposals' ? 'bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20 shadow-[inset_0_0_10px_rgba(212,175,55,0.1)]' : 'text-slate-400'
               }`}
             >
               <span>Skrzynka wymian</span>
               {activeProposalsCount > 0 && (
-                <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-red-600 text-white min-w-[20px] text-center">
+                <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-red-600/90 text-white min-w-[20px] text-center shadow-lg shadow-red-500/20">
                   {activeProposalsCount}
                 </span>
               )}
@@ -431,105 +431,101 @@ export default function App() {
             <button 
               onClick={() => { setActiveTab('market'); setMobileMenuOpen(false); }} 
               className={`px-3 py-2 rounded-lg text-left flex items-center justify-between ${
-                activeTab === 'market' ? 'bg-blue-500/10 text-white' : 'text-slate-400'
+                activeTab === 'market' ? 'bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20 shadow-[inset_0_0_10px_rgba(212,175,55,0.1)]' : 'text-slate-400'
               }`}
             >
               <span>Giełda zmian</span>
               {activeMarketCount > 0 && (
-                <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-red-600 text-white min-w-[20px] text-center animate-pulse row">
+                <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-red-600/90 text-white min-w-[20px] text-center animate-pulse shadow-lg shadow-red-500/20">
                   {activeMarketCount}
                 </span>
               )}
             </button>
             
             {(role === 'coordinator' || role === 'admin') && (
-              <button onClick={() => { setActiveTab('coordinator'); setMobileMenuOpen(false); }} className={`px-3 py-2 text-left text-yellow-500 ${activeTab === 'coordinator' ? 'bg-yellow-550/10' : ''}`}>Raport Koord.</button>
+              <button onClick={() => { setActiveTab('coordinator'); setMobileMenuOpen(false); }} className={`px-3 py-2 text-left transition-colors ${activeTab === 'coordinator' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' : 'text-yellow-500/70 hover:text-yellow-400'}`}>Raport Koord.</button>
             )}
             {role === 'admin' && (
               <>
-                <button onClick={() => { setActiveTab('control'); setMobileMenuOpen(false); }} className={`px-3 py-2 text-left text-orange-400 ${activeTab === 'control' ? 'bg-orange-550/10' : ''}`}>Kontrola zmian</button>
-                <button onClick={() => { setActiveTab('admin'); setMobileMenuOpen(false); }} className={`px-3 py-2 text-left text-emerald-400 ${activeTab === 'admin' ? 'bg-emerald-555/10' : ''}`}>Panel Excel</button>
+                <button onClick={() => { setActiveTab('admin'); setMobileMenuOpen(false); }} className={`px-3 py-2 text-left transition-colors ${activeTab === 'admin' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'text-emerald-500/70 hover:text-emerald-400'}`}>Panel Excel</button>
               </>
             )}
           </div>
-          <div className="pt-2 border-t border-slate-850 flex items-center justify-between gap-2">
-            <button onClick={() => setShowPassModal(true)} className="px-4 py-2 bg-slate-800 rounded-lg text-xs text-slate-300">Zmień Hasło</button>
+          <div className="pt-2 border-t border-[#D4AF37]/10 flex items-center justify-between gap-2">
+            <button onClick={() => setShowPassModal(true)} className="px-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-xs text-slate-300">Zmień Hasło</button>
             <button onClick={handleLogout} className="px-4 py-2 border border-red-500/40 text-red-400 rounded-lg text-xs">Wyloguj</button>
           </div>
         </div>
       )}
 
       {/* CORE DESKTOP NAVIGATION ROW */}
-      <nav className="hidden md:flex bg-slate-950 border-b border-slate-900 px-6 gap-2 py-2 overflow-x-auto">
+      <nav className="hidden md:flex bg-slate-950/30 border-b border-[#D4AF37]/20 px-6 gap-2 pt-2 overflow-x-auto items-end backdrop-blur-sm relative z-30">
         <button 
           onClick={() => setActiveTab('start')}
-          className={`px-4 py-2 text-xs font-bold uppercase rounded-lg tracking-wider transition ${
-            activeTab === 'start' ? 'bg-blue-500/10 text-white' : 'text-slate-400 hover:text-slate-200'
+          className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
+            activeTab === 'start' ? 'text-[#D4AF37] bg-slate-900/40 shadow-[inset_0_1px_0_rgba(212,175,55,0.2)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-[#D4AF37] before:shadow-[0_0_10px_rgba(212,175,55,0.6)]' : 'text-slate-400 hover:text-slate-200 pb-2'
           }`}
         >
-          Dziś w pracy
+          {activeTab === 'start' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+          <span className="relative z-10">Dziś w pracy</span>
         </button>
         <button 
           onClick={() => setActiveTab('dashboard')}
-          className={`px-4 py-2 text-xs font-bold uppercase rounded-lg tracking-wider transition ${
-            activeTab === 'dashboard' ? 'bg-blue-500/10 text-white' : 'text-slate-400 hover:text-slate-200'
+          className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
+            activeTab === 'dashboard' ? 'text-[#D4AF37] bg-slate-900/40 shadow-[inset_0_1px_0_rgba(212,175,55,0.2)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-[#D4AF37] before:shadow-[0_0_10px_rgba(212,175,55,0.6)]' : 'text-slate-400 hover:text-slate-200 pb-2'
           }`}
         >
-          Mój grafik
+          {activeTab === 'dashboard' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+          <span className="relative z-10">Mój grafik</span>
         </button>
         <button 
           onClick={() => setActiveTab('calendar')}
-          className={`px-4 py-2 text-xs font-bold uppercase rounded-lg tracking-wider transition ${
-            activeTab === 'calendar' ? 'bg-blue-500/10 text-white' : 'text-slate-400 hover:text-slate-200'
+          className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
+            activeTab === 'calendar' ? 'text-[#D4AF37] bg-slate-900/40 shadow-[inset_0_1px_0_rgba(212,175,55,0.2)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-[#D4AF37] before:shadow-[0_0_10px_rgba(212,175,55,0.6)]' : 'text-slate-400 hover:text-slate-200 pb-2'
           }`}
         >
-          Grafik ogólny
+          {activeTab === 'calendar' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+          <span className="relative z-10">Grafik ogólny</span>
         </button>
         <button 
           onClick={() => setActiveTab('proposals')}
-          className={`px-4 py-2 text-xs font-bold uppercase rounded-lg tracking-wider transition flex items-center gap-1.5 ${
-            activeTab === 'proposals' ? 'bg-blue-500/10 text-white' : 'text-slate-400 hover:text-slate-200'
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
+            activeTab === 'proposals' ? 'text-[#D4AF37] bg-slate-900/40 shadow-[inset_0_1px_0_rgba(212,175,55,0.2)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-[#D4AF37] before:shadow-[0_0_10px_rgba(212,175,55,0.6)]' : 'text-slate-400 hover:text-slate-200 pb-2'
           }`}
         >
-          <span>Skrzynka wymian</span>
+          {activeTab === 'proposals' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+          <span className="relative z-10">Skrzynka wymian</span>
           {activeProposalsCount > 0 && (
-            <span className="px-1.5 py-0.5 text-[10px] font-black rounded-full bg-red-600 text-white min-w-[18px] text-center animate-pulse leading-none flex items-center justify-center">
+            <span className="relative z-10 px-1.5 py-0.5 text-[10px] font-black rounded-full bg-red-600/90 text-white min-w-[18px] text-center animate-pulse leading-none flex items-center justify-center">
               {activeProposalsCount}
             </span>
           )}
         </button>
         <button 
           onClick={() => setActiveTab('market')}
-          className={`px-4 py-2 text-xs font-bold uppercase rounded-lg tracking-wider transition flex items-center gap-1.5 ${
-            activeTab === 'market' ? 'bg-blue-500/10 text-white' : 'text-slate-400 hover:text-slate-200'
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
+            activeTab === 'market' ? 'text-[#D4AF37] bg-slate-900/40 shadow-[inset_0_1px_0_rgba(212,175,55,0.2)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-[#D4AF37] before:shadow-[0_0_10px_rgba(212,175,55,0.6)]' : 'text-slate-400 hover:text-slate-200 pb-2'
           }`}
         >
-          <span>Giełda zmian</span>
+          {activeTab === 'market' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+          <span className="relative z-10">Giełda zmian</span>
           {activeMarketCount > 0 && (
-            <span className="px-1.5 py-0.5 text-[10px] font-black rounded-full bg-red-600 text-white min-w-[18px] text-center animate-pulse leading-none flex items-center justify-center">
+            <span className="relative z-10 px-1.5 py-0.5 text-[10px] font-black rounded-full bg-red-600/90 text-white min-w-[18px] text-center animate-pulse leading-none flex items-center justify-center">
               {activeMarketCount}
             </span>
           )}
         </button>
 
         {/* Separator */}
-        <span className="w-px bg-slate-800 self-stretch my-1" />
+        <span className="w-px bg-[#D4AF37]/20 self-stretch my-2 ml-1 mr-1" />
 
         {/* Admins subroutines */}
         {role === 'admin' && (
           <>
             <button 
-              onClick={() => setActiveTab('control')}
-              className={`px-4 py-2 text-xs font-bold uppercase rounded-lg tracking-wider transition text-orange-400 ${
-                activeTab === 'control' ? 'bg-orange-500/10' : 'hover:text-orange-450'
-              }`}
-            >
-              Kontrola zmian
-            </button>
-            <button 
               onClick={() => setActiveTab('admin')}
-              className={`px-4 py-2 text-xs font-bold uppercase rounded-lg tracking-wider transition text-emerald-400 ${
-                activeTab === 'admin' ? 'bg-emerald-500/10' : 'hover:text-emerald-450'
+              className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all opacity-80 hover:opacity-100 ${
+                activeTab === 'admin' ? 'text-emerald-400 bg-emerald-500/10 border-b-2 border-emerald-500 pb-3' : 'text-emerald-500/70 hover:text-emerald-400 pb-2'
               }`}
             >
               Panel Excel
