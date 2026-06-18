@@ -1,0 +1,6 @@
+{
+  "name": "Grafik LOT",
+  "description": "Full-stack airport lounge schedule and shift replacement management board with Excel spreadheet parsers, coordinator reports and staff statistics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
