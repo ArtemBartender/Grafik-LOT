@@ -879,46 +879,42 @@ export default function App() {
                             <div className="flex flex-col gap-2 w-full sm:w-auto">
                               {matchingShifts.map((s, sIdx) => {
                                 const isPolonez = s.lounge ? String(s.lounge).trim().toLowerCase() === 'polonez' : false;
-                                const isMorning = isShiftCodeMorning(s.code);
+
+                                let displayCode = s.code;
+                                if (displayCode === '1') displayCode = 'Rano';
+                                else if (displayCode === '2') displayCode = 'Popo';
+                                else if (displayCode === '1/B') displayCode = 'Rano (B)';
+                                else if (displayCode === '2/B') displayCode = 'Popo (B)';
+                                else if (displayCode.includes('1')) displayCode = displayCode.replace('1', 'Rano');
+                                else if (displayCode.includes('2')) displayCode = displayCode.replace('2', 'Popo');
 
                                 return (
                                   <div 
                                     key={sIdx}
                                     className={`flex items-center justify-between gap-6 p-3 rounded-xl border min-w-full sm:min-w-[320px] ${
-                                      isMorning
+                                      isPolonez
                                         ? 'bg-amber-500/10 border-amber-500/20 text-amber-200'
-                                        : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-200'
+                                        : 'bg-blue-500/10 border-blue-500/20 text-blue-200'
                                     }`}
                                   >
                                     <div className="flex items-center gap-3">
-                                      <span className="text-lg">{isMorning ? '☀️' : '🌙'}</span>
                                       <div>
-                                        <div className="flex items-center gap-1.5 text-xs font-black uppercase font-mono">
-                                          ZMIANA <span className="text-white bg-slate-950 px-2 py-0.5 rounded font-black font-mono text-[12px] border border-slate-800">{s.code}</span>
+                                        <div className="flex items-center gap-1.5 text-xs font-black uppercase font-mono tracking-widest">
+                                          <span className={`px-2 py-0.5 rounded font-black font-sans text-[12px] border ${isPolonez ? 'bg-amber-500/20 text-amber-200 border-amber-500/30' : 'bg-blue-500/20 text-blue-200 border-blue-500/30'}`}>{displayCode}</span>
                                           {s.is_zmiwaka && (
-                                            <span className="badge-zmiwak text-[9px] px-2 py-0.5 rounded font-bold ml-1 bg-slate-500/20 border border-slate-500/30 text-slate-200">Zmywak</span>
+                                            <span className="badge-zmiwak text-[9px] px-2 py-0.5 rounded font-bold bg-slate-500/20 border border-slate-500/30 text-slate-200 uppercase">Zmywak</span>
                                           )}
-                                        </div>
-                                        <div className="text-[10px] text-slate-400 font-bold mt-1">
-                                          Czas: <span className="font-mono text-slate-200 font-extrabold">{s.worked_hours} godzin pracy</span>
                                         </div>
                                       </div>
                                     </div>
 
                                     <div className="text-right flex items-center gap-2 shrink-0">
-                                      <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black tracking-normal uppercase leading-none shadow-sm ${
-                                        isPolonez 
-                                          ? 'bg-yellow-500/20 border border-yellow-500/30 text-yellow-300' 
-                                          : 'bg-blue-500/20 border border-blue-500/30 text-blue-300'
-                                      }`}>
-                                        {isPolonez ? 'POLONEZ' : 'MAZUREK'}
-                                      </span>
                                       <button 
                                         onClick={() => handleDropShift(s.id)}
                                         className="p-1 px-2 rounded-lg bg-red-500/10 hover:bg-red-500/25 border border-red-500/20 text-red-400 text-[10px] font-extrabold transition uppercase tracking-wider shrink-0"
-                                        title="Usuń zmianę (oddałem komuś)"
+                                        title="Usuń zmianę"
                                       >
-                                        Usuń
+                                        USUŃ
                                       </button>
                                     </div>
                                   </div>
@@ -991,47 +987,40 @@ export default function App() {
                             <div className="hidden sm:block space-y-1">
                               {cell.isCurrentMonth && filteredShifts.map((s, sIdx) => {
                                 const isPolonez = s.lounge ? String(s.lounge).trim().toLowerCase() === 'polonez' : false;
-                                const loungeLabel = isPolonez ? 'PLN' : 'MZR';
-                                const isMorning = isShiftCodeMorning(s.code);
+                                
+                                let displayCode = s.code;
+                                if (displayCode === '1') displayCode = 'Rano';
+                                else if (displayCode === '2') displayCode = 'Popo';
+                                else if (displayCode === '1/B') displayCode = 'Rano (B)';
+                                else if (displayCode === '2/B') displayCode = 'Popo (B)';
+                                else if (displayCode.includes('1')) displayCode = displayCode.replace('1', 'Rano');
+                                else if (displayCode.includes('2')) displayCode = displayCode.replace('2', 'Popo');
                                 
                                 return (
                                   <div 
                                     key={sIdx}
-                                    className={`text-[9.5px] p-2 rounded-xl border flex flex-col transition gap-0.5 shadow-sm leading-tight ${
-                                      isMorning
-                                        ? 'bg-amber-500/10 hover:bg-amber-500/15 border-amber-500/25 text-amber-200'
-                                        : 'bg-indigo-500/10 hover:bg-indigo-500/15 border-indigo-500/25 text-indigo-200'
+                                    className={`text-[10px] p-1.5 px-2 rounded-lg border flex items-center justify-between transition gap-1 shadow-sm leading-none font-bold ${
+                                      isPolonez
+                                        ? 'bg-amber-500/15 hover:bg-amber-500/20 border-amber-500/30 text-amber-300'
+                                        : 'bg-blue-500/15 hover:bg-blue-500/20 border-blue-500/30 text-blue-300'
                                     }`}
                                   >
-                                    <div className="flex items-center justify-between font-mono font-extrabold pb-0.5 border-b border-current/10">
-                                      <span className="flex items-center gap-0.5">
-                                        {isMorning ? '☀️' : '🌙'} {s.code}
-                                        {s.is_zmiwaka && (
-                                          <span className="text-[8px] px-1 bg-slate-500/25 text-slate-200 rounded shrink-0 border border-slate-500/35 font-bold" title="Zmywak">Z</span>
-                                        )}
-                                      </span>
-                                      <div className="flex items-center gap-1 shrink-0">
-                                        <span className={`px-1 rounded-[4px] text-[7.5px] font-black tracking-normal leading-0 ${
-                                          isPolonez ? 'bg-yellow-500/20 text-yellow-300' : 'bg-blue-500/20 text-blue-300'
-                                        }`}>
-                                          {loungeLabel}
-                                        </span>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDropShift(s.id);
-                                          }}
-                                          className="text-red-400 hover:text-red-350 hover:bg-slate-950 px-0.5 rounded font-black text-xs transition leading-none"
-                                          title="Usuń zmianę (oddałem)"
-                                        >
-                                          &times;
-                                        </button>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center justify-between text-[7.5px] font-bold pt-0.5 opacity-80 font-mono">
-                                      <span>h:</span>
-                                      <strong>{s.worked_hours}</strong>
-                                    </div>
+                                    <span className="flex items-center gap-1 font-sans font-black tracking-wide">
+                                      <span>{displayCode}</span>
+                                      {s.is_zmiwaka && (
+                                        <span className="text-[8px] px-1 py-0.5 bg-slate-500/30 text-slate-200 rounded border border-slate-500/40 uppercase font-black" title="Zmywak">Z</span>
+                                      )}
+                                    </span>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDropShift(s.id);
+                                      }}
+                                      className="text-red-400/80 hover:text-red-350 hover:bg-red-500/20 px-1 py-0.5 mt-0.5 rounded font-black text-xs transition leading-none shrink-0 opacity-0 group-hover:opacity-100 md:opacity-100"
+                                      title="Usuń zmianę"
+                                    >
+                                      &times;
+                                    </button>
                                   </div>
                                 );
                               })}
@@ -1041,28 +1030,29 @@ export default function App() {
                             <div className="sm:hidden flex flex-col gap-1 w-full mt-1.5 overflow-visible">
                               {cell.isCurrentMonth && filteredShifts.map((s, sIdx) => {
                                 const isPolonez = s.lounge ? String(s.lounge).trim().toLowerCase() === 'polonez' : false;
-                                const isMorning = isShiftCodeMorning(s.code);
+                                
+                                let displayCode = s.code;
+                                if (displayCode === '1') displayCode = 'Rano';
+                                else if (displayCode === '2') displayCode = 'Popo';
+                                else if (displayCode === '1/B') displayCode = 'Rano (B)';
+                                else if (displayCode === '2/B') displayCode = 'Popo (B)';
+                                else if (displayCode.includes('1')) displayCode = displayCode.replace('1', 'Rano');
+                                else if (displayCode.includes('2')) displayCode = displayCode.replace('2', 'Popo');
                                 
                                 return (
                                   <div 
                                     key={sIdx}
-                                    className={`w-full py-1 px-1 rounded block flex flex-col border shadow-sm shrink-0 ${
-                                      isMorning
+                                    className={`w-full py-1.5 px-1.5 rounded-md block flex items-center justify-between border shadow-sm shrink-0 ${
+                                      isPolonez
                                         ? 'bg-amber-500/15 border-amber-500/30 text-amber-200'
-                                        : 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300'
+                                        : 'bg-blue-500/15 border-blue-500/30 text-blue-200'
                                     }`}
                                     title={`${isPolonez ? 'Polonez' : 'Mazurek'}: ${s.code} (${s.worked_hours}h)`}
                                   >
-                                    <div className="flex items-center justify-between">
-                                      <span className="font-mono text-[10px] font-black flex items-center gap-0.5 truncate">
-                                        {s.code}
-                                        {s.is_zmiwaka && <span className="text-[8px] px-0.5 bg-slate-500/40 rounded">Z</span>}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-[9px] mt-0.5 opacity-90 font-bold">
-                                      <span>{s.worked_hours}h</span>
-                                      <span className={`px-1 rounded ${isPolonez ? 'bg-yellow-500/30' : 'bg-blue-500/30'}`}>{isPolonez ? 'P' : 'M'}</span>
-                                    </div>
+                                    <span className="font-sans text-[10px] font-black flex items-center gap-1 truncate tracking-wide">
+                                      {displayCode}
+                                      {s.is_zmiwaka && <span className="text-[8px] px-1 py-0.5 bg-slate-500/40 rounded border border-slate-500/40">Z</span>}
+                                    </span>
                                   </div>
                                 );
                               })}
