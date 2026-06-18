@@ -839,7 +839,7 @@ export default function App() {
                     </span>
                   </div>
 
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                  <div className="space-y-3 pr-1">
                     {(() => {
                       const activeShiftsDays = calendarCells.filter(cell => cell.isCurrentMonth && cell.shifts.filter(matchesFilter).length > 0);
                       
