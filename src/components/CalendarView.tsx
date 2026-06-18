@@ -225,13 +225,18 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
       parsedList = parsedList.filter(p => String(p.lounge || p.coord_lounge).toLowerCase() === filterLounge);
     }
 
+    const isUnderstaffed = parsedList.length < 12 && parsedList.length > 0;
+    const isFilteredOut = filterUnderstaffedOnly && !isUnderstaffed;
+
     return (
-      <div className={`shift-group group--${group} flex-1 p-3 rounded-xl space-y-2.5`}>
-        <div className="flex justify-between items-center text-xs font-bold text-slate-400 select-none">
+      <div className={`shift-group group--${group} flex-1 p-3 rounded-xl space-y-2.5 transition-opacity ${isFilteredOut ? 'opacity-30 grayscale' : ''} ${filterUnderstaffedOnly && isUnderstaffed ? 'border border-[#D4AF37]/50 shadow-[0_0_15px_rgba(212,175,55,0.15)]' : ''}`}>
+        <div className={`flex justify-between items-center text-xs font-bold select-none ${filterUnderstaffedOnly && isUnderstaffed ? 'text-[#D4AF37]' : 'text-slate-400'}`}>
           <span className="flex items-center gap-1">
             {group === 'morning' ? '☀' : '🌙'} {titleLabel}
           </span>
-          <span className="px-2 py-0.5 bg-slate-900/60 rounded-full text-slate-500 font-mono text-[10px]">{parsedList.length} d</span>
+          <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] ${filterUnderstaffedOnly && isUnderstaffed ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'bg-slate-900/60 text-slate-500'}`}>
+            {parsedList.length} d
+          </span>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -417,17 +422,17 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
         </div>
 
         {/* APPLE-GLASS MULTI-FILTER BAR PANEL */}
-        <div className="bg-slate-950/40 p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row gap-4 backdrop-blur-xl">
+        <div className="bg-slate-950/60 p-4 rounded-2xl border border-[#D4AF37]/10 flex flex-col md:flex-row gap-4 backdrop-blur-xl relative z-10">
           {/* Lounge Switcher Segment Controls - Apple design */}
           <div className="flex-1 space-y-1.5">
-            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest font-mono block">🏫 Salon (Lounge)</label>
-            <div className="p-1 bg-slate-950/80 rounded-xl border border-slate-850 flex gap-1 shadow-inner">
+            <label className="text-[10px] font-extrabold text-[#D4AF37]/70 uppercase tracking-widest font-mono block">🏫 Salon (Lounge)</label>
+            <div className="p-1 bg-slate-950/80 rounded-xl border border-slate-900 flex gap-1 shadow-inner">
               <button
                 onClick={() => setFilterLounge('all')}
                 className={`flex-1 py-1.5 px-2.5 text-[11px] font-bold rounded-lg transition-all duration-300 ${
                   filterLounge === 'all'
-                    ? 'bg-slate-800/80 text-white shadow-md border border-white/5'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-[#D4AF37]/10 text-[#D4AF37] shadow-md border border-[#D4AF37]/20'
+                    : 'text-slate-500 hover:text-slate-300 border border-transparent'
                 }`}
               >
                 Wszystkie
@@ -436,8 +441,8 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
                 onClick={() => setFilterLounge('mazurek')}
                 className={`flex-1 py-1.5 px-2.5 text-[11px] font-bold rounded-lg transition-all duration-300 ${
                   filterLounge === 'mazurek'
-                    ? 'bg-blue-600/20 text-blue-300 shadow-md border border-blue-500/30'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-[#D4AF37]/10 text-[#D4AF37] shadow-md border border-[#D4AF37]/20'
+                    : 'text-slate-500 hover:text-slate-300 border border-transparent'
                 }`}
               >
                 Mazurek
@@ -446,8 +451,8 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
                 onClick={() => setFilterLounge('polonez')}
                 className={`flex-1 py-1.5 px-2.5 text-[11px] font-bold rounded-lg transition-all duration-300 ${
                   filterLounge === 'polonez'
-                    ? 'bg-yellow-600/20 text-yellow-300 shadow-md border border-yellow-500/30'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-[#D4AF37]/10 text-[#D4AF37] shadow-md border border-[#D4AF37]/20'
+                    : 'text-slate-500 hover:text-slate-300 border border-transparent'
                 }`}
               >
                 Polonez
@@ -455,14 +460,16 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
             </div>
           </div>
 
+          <div className="w-px bg-[#D4AF37]/10 self-stretch hidden md:block my-2" />
+
           {/* Searchable select employee */}
           <div className="flex-1 space-y-1.5">
-            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest font-mono block">👤 Filtruj wg osoby (Person)</label>
+            <label className="text-[10px] font-extrabold text-[#D4AF37]/70 uppercase tracking-widest font-mono block">👤 Filtruj wg osoby</label>
             <div className="relative">
               <select
                 value={filterPersonId}
                 onChange={(e) => setFilterPersonId(e.target.value)}
-                className="w-full bg-slate-950/80 border border-slate-850 rounded-xl p-2.5 text-xs font-bold text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition appearance-none cursor-pointer pr-10"
+                className="w-full bg-slate-950/80 border border-[#D4AF37]/20 rounded-xl p-2.5 text-xs font-bold text-[#D4AF37] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 transition appearance-none cursor-pointer pr-10"
               >
                 <option value="all" className="bg-slate-950 text-slate-355 font-bold">Wszyscy pracownicy ({uniquePeople.length})</option>
                 {uniquePeople.map(p => (
@@ -471,19 +478,21 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
                   </option>
                 ))}
               </select>
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-[10px]">▼</div>
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#D4AF37]/50 pointer-events-none text-[10px]">▼</div>
             </div>
           </div>
 
+          <div className="w-px bg-[#D4AF37]/10 self-stretch hidden md:block my-2" />
+
           {/* Understaffed condition checkbox button */}
           <div className="flex-1 space-y-1.5 flex flex-col justify-end">
-            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest font-mono block">⚠️ Kryterium obsady</label>
+            <label className="text-[10px] font-extrabold text-[#D4AF37]/70 uppercase tracking-widest font-mono block">⚠️ Kryterium obsady</label>
             <button
               onClick={() => setFilterUnderstaffedOnly(!filterUnderstaffedOnly)}
               className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all duration-300 border flex items-center justify-center gap-2 ${
                 filterUnderstaffedOnly
-                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-md'
-                  : 'bg-slate-950/80 border-slate-850 text-slate-400 hover:text-slate-200 hover:border-slate-800'
+                  ? 'bg-[#D4AF37]/20 text-[#D4AF37] border-[#D4AF37]/40 shadow-[0_0_15px_rgba(212,175,55,0.2)]'
+                  : 'bg-slate-950/80 border-[#D4AF37]/20 text-slate-400 hover:text-[#D4AF37] hover:border-[#D4AF37]/40'
               }`}
             >
               <span>⚠️</span> {filterUnderstaffedOnly ? 'Tylko braki kadrowe (< 12 os)' : 'Pokaż tylko braki kadrowe (< 12 os)'}
@@ -510,10 +519,10 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
                 ref={isToday ? todayAnchorRef : null}
                 className={`day-row flex flex-col gap-3 rounded-2xl border p-4 transition duration-200 ${
                   isToday 
-                    ? 'border-blue-500/50 bg-[#0f1b2e] shadow-lg shadow-blue-500/5 ring-1 ring-blue-500/30' 
+                    ? 'border-[#D4AF37]/50 bg-[#0f1b2e]/60 shadow-[0_0_15px_rgba(212,175,55,0.15)] ring-1 ring-[#D4AF37]/30' 
                     : isPast
-                      ? 'border-slate-850/50 opacity-60 bg-slate-950/20'
-                      : 'border-slate-800 bg-slate-900/60'
+                      ? 'border-slate-800/30 opacity-60 bg-slate-950/10'
+                      : 'border-[#D4AF37]/10 bg-slate-900/40 backdrop-blur-md hover:bg-slate-900/60'
                 }`}
                 data-day-row={iso}
               >
