@@ -5,27 +5,47 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
-/* Base custom variables matching legacy dark-space theme */
+/* Base custom variables matching LOT Business Lounge theme */
 :root {
-  --bg: #0b0d10;
+  --bg-top: #071A36;
+  --bg-bottom: #0A2245;
   --text: #eaf0f6;
   --muted: #8b97a7;
-  --card: #11151a;
-  --card2: #0d1116;
-  --panel: #0f141a;
-  --border: #1a2027;
-  --accent: #6aa9ff;
-  --accent2: #7bffb5;
+  --card: rgba(15, 30, 55, 0.45);
+  --card2: rgba(10, 25, 45, 0.6);
+  --panel: rgba(12, 28, 50, 0.85);
+  --border: rgba(212, 175, 55, 0.15); /* Subtle gold top/bottom lines */
+  --accent: #D4AF37; /* GOLD */
+  --accent-glow: rgba(212, 175, 55, 0.25);
+  --accent2: #6aa9ff;
   --danger: #ff6a6a;
-  --topbar-h: 56px;
-  --topbar-alpha: 0.78;
+  --topbar-h: 64px;
 }
 
 html, body {
-  background-color: var(--bg);
+  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-sans);
   min-height: 100vh;
+}
+
+/* Watermark background */
+body::before {
+  content: "═══════════════════════\A   LOT BUSINESS LOUNGE\A═══════════════════════";
+  white-space: pre-wrap;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.5rem;
+  font-family: var(--font-mono);
+  color: rgba(212, 175, 55, 0.03); /* 3% opacity gold */
+  line-height: 1.5;
+  text-align: center;
+  pointer-events: none;
+  z-index: -1;
+  letter-spacing: 0.2em;
 }
 
 /* Custom Scrollbars */
@@ -34,20 +54,25 @@ html, body {
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg);
+  background: var(--bg-top);
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--muted);
+  background: var(--accent);
 }
 
 /* Animation utilities */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes goldShine {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
 }
 
 .animate-fade-in {
