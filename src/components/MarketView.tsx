@@ -155,7 +155,7 @@ export default function MarketView({ addToast, onRefresh }: MarketViewProps) {
               🌍 Otwarte oferty giełdowe
             </h3>
             
-            <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+            <div className="space-y-2 pr-1">
               {openOffers.length === 0 ? (
                 <div className="text-slate-550 text-xs italic py-4">Brak wolnych zmian na rynku.</div>
               ) : (
@@ -205,7 +205,7 @@ export default function MarketView({ addToast, onRefresh }: MarketViewProps) {
               🔑 Moje wystawione oferty
             </h3>
 
-            <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+            <div className="space-y-2 pr-1">
               {mineOffers.length === 0 ? (
                 <div className="text-slate-550 text-xs italic py-4">Nie masz obecnie wystawionych zmian na rynku.</div>
               ) : (
