@@ -3,12 +3,15 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --color-gold-light: #F9E596;
+  --color-gold: #D4AF37;
+  --color-gold-dark: #997A15;
 }
 
 /* Base custom variables matching LOT Business Lounge theme */
 :root {
-  --bg-top: #071A36;
-  --bg-bottom: #0A2245;
+  --bg-top: #051329;
+  --bg-bottom: #091c3a;
   --text: #eaf0f6;
   --muted: #8b97a7;
   --card: rgba(15, 30, 55, 0.45);
@@ -235,3 +238,36 @@ body::before {
   z-index: 10;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
+
+.text-gold-gradient {
+  background: linear-gradient(135deg, var(--color-gold-light) 0%, var(--color-gold) 50%, var(--color-gold-dark) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
+}
+
+.bg-gold-gradient {
+  background: linear-gradient(135deg, var(--color-gold-light) 0%, var(--color-gold) 50%, var(--color-gold-dark) 100%);
+}
+
+.border-gold {
+  border-color: var(--color-gold);
+}
+
+.text-gold-light {
+  color: var(--color-gold-light);
+}
+
+.bg-gold {
+  background-color: var(--color-gold);
+}
+
+.shadow-gold-glow {
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.25), inset 0 0 10px rgba(212, 175, 55, 0.1);
+}
+
+.shadow-gold-glow-strong {
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.4), inset 0 0 15px rgba(212, 175, 55, 0.2);
+}
+
