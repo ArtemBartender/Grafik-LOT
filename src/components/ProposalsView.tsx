@@ -171,7 +171,7 @@ export default function ProposalsView({ addToast, onRefresh }: ProposalsViewProp
         </div>
 
         {/* LIST RENDER */}
-        <div className="space-y-3.5 max-h-[420px] overflow-y-auto pr-1">
+        <div className="space-y-3.5 pr-1">
           {currentList.length === 0 ? (
             <div className="text-slate-500 text-sm italic py-4">Brak propozycji w tej zakładce.</div>
           ) : (
