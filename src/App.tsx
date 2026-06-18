@@ -412,13 +412,13 @@ export default function App() {
             <p className="text-gold-gradient font-bold">{myName} ({role})</p>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => { setActiveTab('start'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'start' ? 'bg-gold-gradient/10 text-gold-gradient border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'}`}>Dziś w pracy</button>
-            <button onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'dashboard' ? 'bg-gold-gradient/10 text-gold-gradient border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'}`}>Mój grafik</button>
-            <button onClick={() => { setActiveTab('calendar'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'calendar' ? 'bg-gold-gradient/10 text-gold-gradient border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'}`}>Grafik ogólny</button>
+            <button onClick={() => { setActiveTab('start'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'start' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'}`}>Dziś w pracy</button>
+            <button onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'dashboard' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'}`}>Mój grafik</button>
+            <button onClick={() => { setActiveTab('calendar'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'calendar' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'}`}>Grafik ogólny</button>
             <button 
               onClick={() => { setActiveTab('proposals'); setMobileMenuOpen(false); }} 
               className={`px-3 py-2 rounded-lg text-left flex items-center justify-between ${
-                activeTab === 'proposals' ? 'bg-gold-gradient/10 text-gold-gradient border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'
+                activeTab === 'proposals' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'
               }`}
             >
               <span>Skrzynka wymian</span>
@@ -431,7 +431,7 @@ export default function App() {
             <button 
               onClick={() => { setActiveTab('market'); setMobileMenuOpen(false); }} 
               className={`px-3 py-2 rounded-lg text-left flex items-center justify-between ${
-                activeTab === 'market' ? 'bg-gold-gradient/10 text-gold-gradient border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'
+                activeTab === 'market' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'
               }`}
             >
               <span>Giełda zmian</span>
@@ -460,37 +460,37 @@ export default function App() {
         <button 
           onClick={() => setActiveTab('start')}
           className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
-            activeTab === 'start' ? 'text-gold-gradient bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
+            activeTab === 'start' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
           }`}
         >
-          {activeTab === 'start' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+          {activeTab === 'start' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
           <span className="relative z-10">Dziś w pracy</span>
         </button>
         <button 
           onClick={() => setActiveTab('dashboard')}
           className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
-            activeTab === 'dashboard' ? 'text-gold-gradient bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
+            activeTab === 'dashboard' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
           }`}
         >
-          {activeTab === 'dashboard' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+          {activeTab === 'dashboard' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
           <span className="relative z-10">Mój grafik</span>
         </button>
         <button 
           onClick={() => setActiveTab('calendar')}
           className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
-            activeTab === 'calendar' ? 'text-gold-gradient bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
+            activeTab === 'calendar' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
           }`}
         >
-          {activeTab === 'calendar' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+          {activeTab === 'calendar' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
           <span className="relative z-10">Grafik ogólny</span>
         </button>
         <button 
           onClick={() => setActiveTab('proposals')}
           className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
-            activeTab === 'proposals' ? 'text-gold-gradient bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
+            activeTab === 'proposals' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
           }`}
         >
-          {activeTab === 'proposals' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+          {activeTab === 'proposals' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
           <span className="relative z-10">Skrzynka wymian</span>
           {activeProposalsCount > 0 && (
             <span className="relative z-10 px-1.5 py-0.5 text-[10px] font-black rounded-full bg-red-600/90 text-white min-w-[18px] text-center animate-pulse leading-none flex items-center justify-center">
@@ -501,10 +501,10 @@ export default function App() {
         <button 
           onClick={() => setActiveTab('market')}
           className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
-            activeTab === 'market' ? 'text-gold-gradient bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
+            activeTab === 'market' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
           }`}
         >
-          {activeTab === 'market' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+          {activeTab === 'market' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
           <span className="relative z-10">Giełda zmian</span>
           {activeMarketCount > 0 && (
             <span className="relative z-10 px-1.5 py-0.5 text-[10px] font-black rounded-full bg-red-600/90 text-white min-w-[18px] text-center animate-pulse leading-none flex items-center justify-center">
@@ -1054,14 +1054,14 @@ export default function App() {
                                     title={`${isPolonez ? 'Polonez' : 'Mazurek'}: ${s.code} (${s.worked_hours}h)`}
                                   >
                                     <div className="flex items-center justify-between">
-                                      <span className="font-mono text-[8px] font-extrabold flex items-center gap-0.5 truncate">
+                                      <span className="font-mono text-[10px] font-black flex items-center gap-0.5 truncate">
                                         {s.code}
-                                        {s.is_zmiwaka && <span className="text-[6px] px-0.5 bg-slate-500/40 rounded">Z</span>}
+                                        {s.is_zmiwaka && <span className="text-[8px] px-0.5 bg-slate-500/40 rounded">Z</span>}
                                       </span>
                                     </div>
-                                    <div className="flex items-center justify-between text-[7px] mt-0.5 opacity-90 font-bold">
-                                      <span>h:{s.worked_hours}</span>
-                                      <span className={`px-0.5 rounded ${isPolonez ? 'bg-yellow-500/30' : 'bg-blue-500/30'}`}>{isPolonez ? 'PLN' : 'MZR'}</span>
+                                    <div className="flex items-center justify-between text-[9px] mt-0.5 opacity-90 font-bold">
+                                      <span>{s.worked_hours}h</span>
+                                      <span className={`px-1 rounded ${isPolonez ? 'bg-yellow-500/30' : 'bg-blue-500/30'}`}>{isPolonez ? 'P' : 'M'}</span>
                                     </div>
                                   </div>
                                 );
