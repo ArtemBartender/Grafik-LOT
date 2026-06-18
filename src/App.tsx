@@ -1038,7 +1038,7 @@ export default function App() {
                             </div>
 
                             {/* MOBILE MODE WITH DRASTICALLY ENHANCED LEGIBILITY */}
-                            <div className="sm:hidden flex flex-col gap-0.5 w-full mt-0.5 overflow-hidden">
+                            <div className="sm:hidden flex flex-col gap-1 w-full mt-1.5 overflow-visible">
                               {cell.isCurrentMonth && filteredShifts.map((s, sIdx) => {
                                 const isPolonez = s.lounge ? String(s.lounge).trim().toLowerCase() === 'polonez' : false;
                                 const isMorning = isShiftCodeMorning(s.code);
@@ -1046,22 +1046,23 @@ export default function App() {
                                 return (
                                   <div 
                                     key={sIdx}
-                                    className={`w-full py-0.5 px-0.5 rounded-md text-[7.5px] font-black leading-none flex items-center justify-between border scale-95 overflow-hidden shrink-0 ${
+                                    className={`w-full py-1 px-1 rounded block flex flex-col border shadow-sm shrink-0 ${
                                       isMorning
-                                        ? 'bg-amber-500/10 border-amber-550/20 text-amber-300'
-                                        : 'bg-indigo-550/10 border-indigo-550/20 text-indigo-305'
+                                        ? 'bg-amber-500/15 border-amber-500/30 text-amber-200'
+                                        : 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300'
                                     }`}
                                     title={`${isPolonez ? 'Polonez' : 'Mazurek'}: ${s.code} (${s.worked_hours}h)`}
                                   >
-                                    <span className="font-mono text-[6.5px] select-none truncate flex items-center gap-0.5">
-                                      {s.code}
-                                      {s.is_zmiwaka && <span className="text-[5px] px-0.5 bg-slate-500/30 text-white rounded font-bold">Z</span>}
-                                    </span>
-                                    <span className={`text-[5px] font-black text-center px-0.5 rounded leading-none shrink-0 ${
-                                      isPolonez ? 'bg-[#3e2d1d] text-yellow-400 font-mono' : 'bg-[#1b233a] text-blue-300 font-mono'
-                                    }`}>
-                                      {isPolonez ? 'P' : 'M'}
-                                    </span>
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-mono text-[8px] font-extrabold flex items-center gap-0.5 truncate">
+                                        {s.code}
+                                        {s.is_zmiwaka && <span className="text-[6px] px-0.5 bg-slate-500/40 rounded">Z</span>}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-[7px] mt-0.5 opacity-90 font-bold">
+                                      <span>h:{s.worked_hours}</span>
+                                      <span className={`px-0.5 rounded ${isPolonez ? 'bg-yellow-500/30' : 'bg-blue-500/30'}`}>{isPolonez ? 'PLN' : 'MZR'}</span>
+                                    </div>
                                   </div>
                                 );
                               })}
@@ -1220,10 +1221,10 @@ export default function App() {
                   }}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
-                  <option value="1">☀️ Smena 1 (Rano)</option>
-                  <option value="2">🌙 Smena 2 (Popołudnie)</option>
-                  <option value="1/B">☀️ Smena 1/B (Bar Rano)</option>
-                  <option value="2/B">🌙 Smena 2/B (Bar Popołudnie)</option>
+                  <option value="1">☀️ Zmiana 1 (Rano)</option>
+                  <option value="2">🌙 Zmiana 2 (Popołudnie)</option>
+                  <option value="1/B">☀️ Zmiana 1/B (Bar Rano)</option>
+                  <option value="2/B">🌙 Zmiana 2/B (Bar Popołudnie)</option>
                   <option value="other">Inna (wpisz ręcznie)...</option>
                 </select>
               </div>
