@@ -2336,11 +2336,6 @@ app.post('/api/upload-xlsx', authGuard, express.raw({ type: '*/*', limit: '20mb'
           }
         }
 
-        // Skip dates in the past
-        if (isoDate < todayPolandStr) {
-          continue;
-        }
-
         // Check if there is already a shift on this day for this user
         // (e.g. preserved manually-added extra shift or custom work log)
         const alreadyExists = await db.select().from(shifts).where(
