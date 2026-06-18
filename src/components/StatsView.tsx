@@ -286,7 +286,7 @@ export default function StatsView({ addToast }: StatsViewProps) {
           <span className="text-xs text-slate-500 font-semibold">{myBriefShifts.length} zmian</span>
         </h3>
 
-        <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+        <div className="space-y-3 pr-1">
           {myBriefShifts.length === 0 ? (
             <div className="text-slate-550 text-sm py-4 italic">Brak zarejestrowanych zmian w tym okresie.</div>
           ) : (
@@ -337,7 +337,7 @@ export default function StatsView({ addToast }: StatsViewProps) {
       {/* MONTHLY SUMMARY NOTES */}
       <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-3">
         <h3 className="text-sm font-bold text-slate-400 uppercase">Podsumowanie notatek o zmianach</h3>
-        <div className="space-y-2 text-xs text-slate-400 max-h-[160px] overflow-y-auto pr-1">
+        <div className="space-y-2 text-xs text-slate-400 pr-1">
           {monthNotes.length === 0 ? (
             <div className="italic text-slate-550 select-none">Brak notatek dla Twoich zmian w tym okresie.</div>
           ) : (
