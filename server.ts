@@ -559,7 +559,7 @@ app.post('/api/shifts/extra', authGuard, async (req: AuthRequest, res) => {
       userId: req.user.id,
       date: String(date),
       kind: 'extra',
-      reason: `Zgłoszono przyjście dodatkowe (Salon: ${lounge || 'Polonez'}, Smena: ${shift_code})`,
+      reason: `Zgłoszono przyjście dodatkowe (Salon: ${lounge || 'Polonez'}, Zmiana: ${shift_code})`,
       hours: info.hours,
       createdAt: new Date().toISOString()
     });
