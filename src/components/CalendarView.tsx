@@ -29,8 +29,10 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
 
   // General Calendar Filters
   const [filterPersonId, setFilterPersonId] = useState<string>('all');
+  const [filterPersonDropdownOpen, setFilterPersonDropdownOpen] = useState(false);
   const [filterUnderstaffedOnly, setFilterUnderstaffedOnly] = useState<boolean>(false);
   const [filterLounge, setFilterLounge] = useState<'all' | 'mazurek' | 'polonez'>('all');
+
 
   // Dynamically extract unique people from bulkMonthData
   const uniquePeople = React.useMemo(() => {
@@ -467,22 +469,43 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
           <div className="w-px bg-[var(--color-gold)]/10 self-stretch hidden md:block my-2" />
 
           {/* Searchable select employee */}
-          <div className="flex-1 space-y-1.5">
+          <div className="flex-1 space-y-1.5 relative">
             <label className="text-[10px] font-extrabold text-[var(--color-gold)]/70 uppercase tracking-widest font-mono block">👤 Filtruj wg osoby</label>
             <div className="relative">
-              <select
-                value={filterPersonId}
-                onChange={(e) => setFilterPersonId(e.target.value)}
-                className="w-full bg-slate-950/80 border border-[var(--color-gold)]/20 rounded-xl p-2.5 text-xs font-bold text-[var(--color-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)]/40 transition appearance-none cursor-pointer pr-10"
+              <button
+                onClick={() => setFilterPersonDropdownOpen(!filterPersonDropdownOpen)}
+                className="w-full bg-slate-950/80 border border-[var(--color-gold)]/20 rounded-xl p-2.5 text-xs font-bold text-[var(--color-gold)] focus:outline-none focus:ring-2 focus:ring-[var(--color-gold)]/40 hover:bg-slate-900 transition text-left flex items-center justify-between shadow-inner"
               >
-                <option value="all" className="bg-slate-950 text-slate-355 font-bold">Wszyscy pracownicy ({uniquePeople.length})</option>
-                {uniquePeople.map(p => (
-                  <option key={p.user_id} value={p.user_id} className="bg-slate-950 text-slate-200">
-                    {p.full_name}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--color-gold)]/50 pointer-events-none text-[10px]">▼</div>
+                <span className="truncate">
+                  {filterPersonId === 'all' 
+                    ? `Wszyscy pracownicy (${uniquePeople.length})` 
+                    : uniquePeople.find(p => p.user_id.toString() === filterPersonId)?.full_name || 'Nieznany'}
+                </span>
+                <span className="text-[var(--color-gold)]/50 text-[10px] pointer-events-none transition-transform duration-300" style={{ transform: filterPersonDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+              </button>
+              
+              {filterPersonDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setFilterPersonDropdownOpen(false)}></div>
+                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-slate-950 border border-[var(--color-gold)]/20 rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto custom-scrollbar flex flex-col p-1 animate-fade-in shadow-gold-glow">
+                    <button 
+                      onClick={() => { setFilterPersonId('all'); setFilterPersonDropdownOpen(false); }}
+                      className={`text-left px-3 py-2.5 text-xs font-bold rounded-lg transition-colors ${filterPersonId === 'all' ? 'bg-[var(--color-gold)]/15 text-[var(--color-gold)]' : 'text-slate-300 hover:bg-slate-900'}`}
+                    >
+                      Wszyscy pracownicy ({uniquePeople.length})
+                    </button>
+                    {uniquePeople.map(p => (
+                      <button
+                        key={p.user_id}
+                        onClick={() => { setFilterPersonId(p.user_id.toString()); setFilterPersonDropdownOpen(false); }}
+                        className={`text-left px-3 py-2.5 text-xs rounded-lg transition-colors border-b border-white/5 last:border-0 ${filterPersonId === p.user_id.toString() ? 'bg-[var(--color-gold)]/15 text-[var(--color-gold)] font-bold' : 'text-slate-300 hover:bg-slate-900 hover:text-white'}`}
+                      >
+                        {p.full_name}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
