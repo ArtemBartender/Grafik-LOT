@@ -265,7 +265,7 @@ export default function ControlView({ addToast }: ControlViewProps) {
           Skrót zdarzeń w wybranym miesiącu
         </h3>
 
-        <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+        <div className="space-y-2.5 pr-1">
           {events.length === 0 ? (
             <div className="text-slate-550 text-sm italic py-4">Brak zgłoszonych zdarzeń w tym miesiącu.</div>
           ) : (
