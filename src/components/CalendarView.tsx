@@ -310,12 +310,12 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
                   className={`person-chip flex items-center gap-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 ${frameClass}`}
                   style={customStyle}
                 >
-                  <span className="font-bold text-white text-[13px]">{p.full_name}</span>
-                  {p.is_coordinator && <span className="badge badge-coord text-[9px] px-1 py-0.5">K</span>}
-                  {isBar && <span className="badge badge-bar text-[9px] px-1 py-0.5">B</span>}
-                  {isZ && <span className="badge badge-zmiwak text-[9px] px-1 py-0.5">Z</span>}
+                  <span className="font-bold text-white text-[15px]">{p.full_name}</span>
+                  {p.is_coordinator && <span className="badge badge-coord text-[11px] px-1.5 py-0.5">K</span>}
+                  {isBar && <span className="badge badge-bar text-[11px] px-1.5 py-0.5">B</span>}
+                  {isZ && <span className="badge badge-zmiwak text-[11px] px-1.5 py-0.5">Z</span>}
                   {p.shift_code && (
-                    <span className="badge badge-shift text-[10px] px-1 font-mono">
+                    <span className="badge badge-shift text-[12px] px-1.5 py-0.5 font-mono">
                       {String(p.shift_code).replace(/\s+/g, '').replace('/B', '')}
                     </span>
                   )}
@@ -489,7 +489,7 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
         </div>
 
         {/* CALENDAR ROWS CONTAINER */}
-        <div className="space-y-3.5 max-h-[640px] overflow-y-auto pr-1">
+        <div className="space-y-3.5 pr-1">
           {filteredDaysList.map((iso) => {
             const dtObj = new Date(iso + 'T12:00:00');
             const isToday = iso === todayIsoRef.current;
