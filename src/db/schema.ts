@@ -10,6 +10,7 @@ export const users = pgTable('users', {
   role: text('role').notNull().default('user'), // 'user', 'coordinator', 'admin'
   hourlyRatePln: doublePrecision('hourly_rate_pln').default(28.10),
   taxPercent: doublePrecision('tax_percent').default(12.0),
+  bonusPercent: doublePrecision('bonus_percent').default(0.0),
 });
 
 export const shifts = pgTable('shifts', {
