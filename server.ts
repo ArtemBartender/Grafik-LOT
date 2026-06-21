@@ -609,7 +609,7 @@ app.post('/api/shifts/extra', authGuard, async (req: AuthRequest, res) => {
   try {
     const { date, shift_code, lounge, is_zmiwaka } = req.body;
     if (!date || !shift_code) {
-      return res.status(400).json({ error: 'Data i код смены są wymagane' });
+      return res.status(400).json({ error: 'Data i zmiana są wymagane' });
     }
 
     const info = getShiftTimeAndHours(shift_code, !!is_zmiwaka);
