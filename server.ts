@@ -13,12 +13,13 @@ import { db } from './src/db/index.ts';
 import { 
   users, shifts, notes, proposals, marketOffers, 
   controlEvents, deletedEvents, coordinatorReports,
-  formatkaPreferences, formatkaLocks
+  formatkaPreferences, formatkaLocks, notifications
 } from './src/db/schema.ts';
 import { eq, and, or, like, desc, asc, sql } from 'drizzle-orm';
 import { authGuard, requireRole, AuthRequest } from './src/lib/auth-middleware.ts';
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(express.json());
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -32,6 +33,7 @@ const loginLimiter = rateLimit({
   message: { error: 'Zbyt wiele prób logowania. Spróbuj ponownie za 15 minut.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false, xForwardedForHeader: false },
 });
 
 // Helper password hasher: Bcrypt (Secure)
@@ -46,6 +48,29 @@ function verifyPassword(password: string, hash: string): boolean {
   }
   const legacyHash = crypto.createHash('sha256').update(password).digest('hex');
   return legacyHash === hash;
+}
+
+// Helper to queue an in-app notification in database based on user notification toggles
+async function notifyUser(userId: number, title: string, message: string, type: 'schedule' | 'market' | 'swap') {
+  try {
+    const userList = await db.select().from(users).where(eq(users.id, userId));
+    if (userList.length === 0) return;
+    const user = userList[0];
+
+    // Check toggles before generating notification
+    if (type === 'schedule' && user.notifyNewSchedule === false) return;
+    if (type === 'market' && user.notifyNewMarket === false) return;
+    if (type === 'swap' && user.notifySwapRequests === false) return;
+
+    await db.insert(notifications).values({
+      userId,
+      title,
+      message,
+      createdAt: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('Error dispatching notification to user ID ' + userId + ':', err);
+  }
 }
 
 // Default Data Seed
@@ -175,13 +200,33 @@ function generateMockShifts(): any[] {
 // Seed function
 async function seedDBIfEmpty() {
   try {
-    // Schema Patch for backwards compatibility (ensuring bonus_percent exists in users table)
+    // Schema Patch for backwards compatibility (ensuring columns exist in users table)
     try {
-      console.log('[Database Schema Sync] Checking if bonus_percent column exists...');
+      console.log('[Database Schema Sync] Ensuring newer/missing columns exist in users...');
       await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "bonus_percent" double precision DEFAULT 0;`);
-      console.log('[Database Schema Sync] Column bonus_percent ensured successfully!');
+      await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "notify_new_schedule" boolean DEFAULT true;`);
+      await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "notify_new_market" boolean DEFAULT true;`);
+      await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "notify_swap_requests" boolean DEFAULT true;`);
+      console.log('[Database Schema Sync] All user columns ensured successfully!');
     } catch (patchErr: any) {
-      console.warn('[Database Schema Sync Warn] Failed to patch bonus_percent: ' + patchErr.message);
+      console.warn('[Database Schema Sync Warn] Failed to patch users columns: ' + patchErr.message);
+    }
+
+    try {
+      console.log('[Database Schema Sync] Ensuring notifications table exists...');
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS "notifications" (
+          "id" serial PRIMARY KEY,
+          "user_id" integer NOT NULL REFERENCES "users" ("id") ON DELETE CASCADE,
+          "title" text NOT NULL,
+          "message" text NOT NULL,
+          "is_read" boolean NOT NULL DEFAULT false,
+          "created_at" text NOT NULL
+        );
+      `);
+      console.log('[Database Schema Sync] Notifications table ensured!');
+    } catch (tableErr: any) {
+      console.warn('[Database Schema Sync Warn] Failed to ensure notifications table: ' + tableErr.message);
     }
 
     const checkUsers = await db.select().from(users).limit(1);
@@ -878,6 +923,13 @@ app.post('/api/proposals', authGuard, async (req: AuthRequest, res) => {
       takeCode: theirShifts[0].shiftCode
     }).returning();
 
+    await notifyUser(
+      Number(target_user_id),
+      "Nowa propozycja wymiany! ⇄",
+      `Pracownik ${user.fullName} chce się z Tobą wymienić: oddaje swoją zmianę ${myShifts[0].shiftCode} w dniu ${my_date} w zamian za Twoją zmianę ${theirShifts[0].shiftCode} w dniu ${their_date}. Wejdź w Propozycje wymian i podejmij decyzję!`,
+      "swap"
+    );
+
     res.json({
       id: inserted[0].id,
       requester_id: inserted[0].requesterId,
@@ -1193,6 +1245,19 @@ app.post('/api/market/offers/:shiftId', authGuard, async (req: AuthRequest, res)
       status: 'open',
       createdAt: new Date().toISOString()
     });
+
+    // Dispatch notifications to all OTHER employees about new market offer
+    const allUsersList = await db.select().from(users);
+    for (const u of allUsersList) {
+      if (u.id !== user.id) {
+        await notifyUser(
+          u.id,
+          "Nowa zmiana na giełdzie! ⇄",
+          `Pojawiła się nowa oferta na giełdzie: zmianę ${shift.shiftCode} w dniu ${shift.shiftDate} wystawił pracownik ${user.fullName}. Kliknij Giełda zmian, aby zgłosić się na nią!`,
+          "market"
+        );
+      }
+    }
 
     res.json({ success: true });
   } catch (err: any) {
@@ -2176,6 +2241,131 @@ app.post('/api/control/add-shift', authGuard, requireRole('admin', 'coordinator'
   }
 });
 
+// --- USER NOTIFICATION FETCH AND DISMISS ---
+app.get('/api/notifications', authGuard, async (req: AuthRequest, res) => {
+  try {
+    const user = req.user;
+    const list = await db.select()
+      .from(notifications)
+      .where(eq(notifications.userId, user.id))
+      .orderBy(desc(notifications.createdAt));
+    res.json(list);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Błąd pobierania powiadomień: ' + err.message });
+  }
+});
+
+app.post('/api/notifications/read-all', authGuard, async (req: AuthRequest, res) => {
+  try {
+    const user = req.user;
+    await db.update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.userId, user.id));
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Błąd markowania powiadomień: ' + err.message });
+  }
+});
+
+// --- ADMIN USERS & ROLE MANAGEMENT ---
+// Only admin can see and edit these.
+app.get('/api/admin/users', authGuard, requireRole('admin'), async (req: AuthRequest, res) => {
+  try {
+    const list = await db.select({
+      id: users.id,
+      email: users.email,
+      fullName: users.fullName,
+      role: users.role,
+      hourlyRatePln: users.hourlyRatePln,
+      taxPercent: users.taxPercent,
+      bonusPercent: users.bonusPercent,
+    }).from(users).orderBy(asc(users.fullName));
+    res.json(list);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Błąd pobierania listy pracowników: ' + err.message });
+  }
+});
+
+app.post('/api/admin/users/:id/role', authGuard, requireRole('admin'), async (req: AuthRequest, res) => {
+  try {
+    const userId = Number(req.params.id);
+    const { role } = req.body;
+    
+    // Verify role is one of: admin, coordinator, barman, ofic, user
+    const allowed = ['admin', 'coordinator', 'barman', 'ofic', 'user'];
+    if (!allowed.includes(role)) {
+      return res.status(400).json({ error: 'Nieprawidłowa rola. Dozwolone: admin, coordinator, barman, ofic, user' });
+    }
+
+    await db.update(users).set({ role }).where(eq(users.id, userId));
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Błąd zmiany roli pracownika: ' + err.message });
+  }
+});
+
+// --- HISTORIC TRADE LOGS (Who swapped with whom) ---
+// Returns audit trace of approved/completed swaps between employees. Only visible to root admin.
+app.get('/api/admin/swaps-log', authGuard, requireRole('admin'), async (req: AuthRequest, res) => {
+  try {
+    const allUsers = await db.select().from(users);
+    const usersMap = new Map(allUsers.map(u => [u.id, u.fullName]));
+
+    // 1) Direct swap proposals that are approved
+    const approvedProposals = await db.select()
+      .from(proposals)
+      .where(eq(proposals.status, 'approved'))
+      .orderBy(desc(proposals.createdAt));
+
+    // 2) Market offers that are completed
+    const completedMarketOffers = await db.select()
+      .from(marketOffers)
+      .where(eq(marketOffers.status, 'completed'))
+      .orderBy(desc(marketOffers.createdAt));
+
+    const loggedSwaps: any[] = [];
+
+    // Map direct swaps
+    for (const p of approvedProposals) {
+      loggedSwaps.push({
+        id: `proposal-${p.id}`,
+        type: 'Bezpośrednia wymiana',
+        userA: usersMap.get(p.requesterId) || `ID #${p.requesterId}`,
+        userB: usersMap.get(p.targetUserId) || `ID #${p.targetUserId}`,
+        dateA: p.myDate,
+        codeA: p.giveCode,
+        dateB: p.theirDate,
+        codeB: p.takeCode,
+        timestamp: p.createdAt,
+      });
+    }
+
+    // Map market completions
+    for (const mo of completedMarketOffers) {
+      if (mo.candidateId) {
+        loggedSwaps.push({
+          id: `market-${mo.id}`,
+          type: 'Wymiana na giełdzie',
+          userA: usersMap.get(mo.ownerId) || `ID #${mo.ownerId}`,
+          userB: usersMap.get(mo.candidateId) || `ID #${mo.candidateId}`,
+          dateA: mo.date,
+          codeA: mo.code,
+          dateB: 'Zgłoszona i zatwierdzona',
+          codeB: mo.code,
+          timestamp: mo.createdAt,
+        });
+      }
+    }
+
+    // Sort complete log chronologically descending
+    loggedSwaps.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    res.json(loggedSwaps);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Błąd pobierania raportu zamian: ' + err.message });
+  }
+});
+
 // Delete controlled log with audit note
 app.post('/api/control/delete', authGuard, requireRole('admin', 'coordinator'), async (req: AuthRequest, res) => {
   try {
@@ -2308,6 +2498,17 @@ app.post('/api/upload-text', authGuard, requireRole('admin', 'coordinator'), asy
         importedCount++;
         dayCursor++;
       }
+    }
+
+    // Dispatch notifications to all employees about schedule update
+    const allRegisteredUsers = await db.select().from(users);
+    for (const u of allRegisteredUsers) {
+      await notifyUser(
+        u.id,
+        "Dodano nowy grafik! 📅",
+        `Opublikowano nowe godziny pracy na ${month}.${year}. Sprawdź swój grafik w kalendarzu!`,
+        "schedule"
+      );
     }
 
     res.json({ success: true, imported: importedCount, created_users });
@@ -2933,6 +3134,18 @@ app.post('/api/upload-xlsx', authGuard, requireRole('admin', 'coordinator'), exp
     debugLogs.push(`Total newly registered workers: ${created_users.length} (${created_users.join(', ')})`);
 
     fs.writeFileSync(path.join(process.cwd(), 'parser_debug.txt'), debugLogs.join('\n'));
+
+    // Dispatch notifications to all employees about schedule update
+    const allRegisteredUsers = await db.select().from(users);
+    for (const u of allRegisteredUsers) {
+      await notifyUser(
+        u.id,
+        "Dodano nowy grafik! 📅",
+        `Opublikowano nowe godziny pracy na ${monthHeader}.${yearHeader}. Sprawdź swój grafik w kalendarzu!`,
+        "schedule"
+      );
+    }
+
     res.json({ success: true, imported: importedCount, created_users });
   } catch (err: any) {
     debugLogs.push(`FATAL ERROR: ${err.message}\n${err.stack}`);
