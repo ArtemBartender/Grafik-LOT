@@ -1,11 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import { db } from '../db/index.ts';
-import { users, shifts, notes, proposals, marketOffers, controlEvents } from '../db/schema.ts';
+import { users } from '../db/schema.ts';
 import { eq } from 'drizzle-orm';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-temp-key-for-development';
 
 export interface AuthRequest extends Request {
   user?: any; // The database user object
 }
+
+export const requireRole = (...roles: string[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized: User not authenticated' });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
+    }
+    next();
+  };
+};
 
 function simplifyPolishChars(str: string): string {
   const mapping: { [key: string]: string } = {
@@ -59,21 +74,15 @@ export const authGuard = async (
     let decodedToken: any = null;
 
     try {
-      const payloadStr = Buffer.from(token, 'base64').toString('utf-8');
-      const payload = JSON.parse(payloadStr);
-      decodedToken = { 
-        email: payload.email, 
-        name: payload.full_name,
-        user_id: payload.user_id 
-      };
+      decodedToken = jwt.verify(token, JWT_SECRET);
     } catch (e) {
-      return res.status(401).json({ error: 'Invalid token format' });
+      return res.status(401).json({ error: 'Auth token expired or invalid (signature failure)' });
     }
 
     // Check if the user exists in our SQL database
     let dbUser = null;
 
-    if (decodedToken.user_id) {
+    if (decodedToken && decodedToken.user_id) {
       const results = await db.select().from(users).where(eq(users.id, Number(decodedToken.user_id)));
       if (results && results.length > 0) {
         dbUser = results[0];
