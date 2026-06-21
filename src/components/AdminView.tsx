@@ -182,7 +182,7 @@ export default function AdminView({ addToast }: AdminViewProps) {
             ⚙️ Panel Zarządzania & Administracji
           </h1>
           <p className="text-xs text-slate-500 mt-1 font-bold">
-            Główny panel administratora (Robert & Michał / Artem). Importuj grafiki, zmieniaj uprawnienia pracowników oraz śledź historię zamian.
+            Główny panel administratora (Coordinator / Admin / Artem). Importuj grafiki, zmieniaj uprawnienia pracowników oraz śledź historię zamian.
           </p>
         </div>
 
@@ -344,7 +344,7 @@ export default function AdminView({ addToast }: AdminViewProps) {
                     <th className="py-2.5 px-3">E-mail roboczy</th>
                     <th className="py-2.5 px-3">Stawka h (PLN)</th>
                     <th className="py-2.5 px-3">Podatek (%)</th>
-                    <th className="py-2.5 px-3">Obecna uprawnienie</th>
+                    <th className="py-2.5 px-3">Aktualna rola</th>
                     <th className="py-2.5 px-3 text-right">Zmień uprawnienia</th>
                   </tr>
                 </thead>
@@ -380,7 +380,7 @@ export default function AdminView({ addToast }: AdminViewProps) {
                           <option value="ofic">Ofic (Kolega na salonie)</option>
                           <option value="barman">Barman</option>
                           <option value="coordinator">Koordynator</option>
-                          <option value="admin">Główny Admin (Michał/Robert)</option>
+                          <option value="admin">Główny Admin (Coordinator)</option>
                         </select>
                       </td>
                     </tr>
