@@ -6,6 +6,25 @@
   --color-gold-light: #F9E596;
   --color-gold: #D4AF37;
   --color-gold-dark: #997A15;
+
+  /* Custom Non-standard Slate Shades and Colors mapping to fix Tailwind v4 styling issues */
+  --color-slate-101: #eef2f6;
+  --color-slate-105: #ebedf3;
+  --color-slate-205: #dae1ec;
+  --color-slate-350: #b3c1d4;
+  --color-slate-450: #7d8da1;
+  --color-slate-550: #55657d;
+  --color-slate-650: #3d4b5f;
+  --color-slate-705: #303c4f;
+  --color-slate-750: #253144;
+  --color-slate-755: #222d3f;
+  --color-slate-805: #1a2333;
+  --color-slate-850: #141c2c;
+  --color-slate-905: #0b111e;
+  --color-slate-955: #040712;
+
+  /* Custom Indigo Shades */
+  --color-indigo-550: #5c6ac4;
 }
 
 /* Base custom variables matching LOT Business Lounge theme */
