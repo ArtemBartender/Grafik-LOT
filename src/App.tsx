@@ -353,181 +353,184 @@ export default function App() {
 
   return (
     <div className="min-h-screen text-slate-100 flex flex-col font-sans select-none relative z-0">
-      {/* BRANDING TOP HEADER ROW */}
-      <header className="px-6 py-4 flex items-center justify-between sticky top-0 z-40 bg-[var(--bg-top)]/80 backdrop-blur-xl border-b-[1px] border-b-[var(--color-gold)]/30 border-t-[1px] border-t-[var(--color-gold)]/30 shadow-[0_4px_30px_rgba(212,175,55,0.05)]">
-        <div className="flex items-center gap-3">
-          {/* Logo badge */}
-          <div className="w-8 h-8 flex items-center justify-center font-black text-gold-gradient font-mono text-2xl opacity-90 drop-shadow-[0_0_12px_rgba(212,175,55,0.6)]">
-            ✈
-          </div>
-          <div className="border-l border-[var(--color-gold)]/30 pl-3">
-            <h1 className="text-sm font-black tracking-[0.15em] text-gold-gradient uppercase font-mono">
-              LOT BUSINESS LOUNGE
-            </h1>
-            <p className="text-[9px] text-[var(--color-gold-light)] font-bold uppercase tracking-[0.3em] leading-none mt-0.5 opacity-80">
-              Warszawa Scheduler
-            </p>
-          </div>
-        </div>
-
-        {/* DESKTOP METADATA WRAPPER */}
-        <div className="hidden md:flex items-center gap-4">
-          <div className="text-right">
-            <span className="text-xs text-slate-400">Zalogowany: </span>
-            <strong className="text-xs text-gold-gradient">{myName}</strong>
-            <div className="text-[10px] font-bold text-slate-500 uppercase flex justify-end gap-1 mt-0.5">
-              Rola: <span className="text-[var(--color-gold-light)] font-extrabold">{role === 'admin' ? 'Michał / Robert (Admin)' : role === 'coordinator' ? 'Koordynator' : 'Pracownik (Waiters/Bar)'}</span>
+      {/* STICKY HEADER & NAVIGATION CONTAINER */}
+      <div className="sticky top-0 z-40 w-full bg-[var(--bg-top)]/95 backdrop-blur-xl border-b border-[var(--color-gold)]/30 shadow-[0_4px_30px_rgba(212,175,55,0.05)]">
+        {/* BRANDING TOP HEADER ROW */}
+        <header className="px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Logo badge */}
+            <div className="w-8 h-8 flex items-center justify-center font-black text-gold-gradient font-mono text-2xl opacity-90 drop-shadow-[0_0_12px_rgba(212,175,55,0.6)]">
+              ✈
+            </div>
+            <div className="border-l border-[var(--color-gold)]/30 pl-3">
+              <h1 className="text-sm font-black tracking-[0.15em] text-gold-gradient uppercase font-mono">
+                LOT BUSINESS LOUNGE
+              </h1>
+              <p className="text-[9px] text-[var(--color-gold-light)] font-bold uppercase tracking-[0.3em] leading-none mt-0.5 opacity-80">
+                Warszawa Scheduler
+              </p>
             </div>
           </div>
 
-          <button 
-            onClick={() => setShowPassModal(true)}
-            className="px-3 py-1.5 bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 text-xs font-semibold rounded-lg transition"
-          >
-            Hasło 🔑
-          </button>
+          {/* DESKTOP METADATA WRAPPER */}
+          <div className="hidden md:flex items-center gap-4">
+            <div className="text-right">
+              <span className="text-xs text-slate-400">Zalogowany: </span>
+              <strong className="text-xs text-gold-gradient">{myName}</strong>
+              <div className="text-[10px] font-bold text-slate-500 uppercase flex justify-end gap-1 mt-0.5">
+                Rola: <span className="text-[var(--color-gold-light)] font-extrabold">{role === 'admin' ? 'Michał / Robert (Admin)' : role === 'coordinator' ? 'Koordynator' : 'Pracownik (Waiters/Bar)'}</span>
+              </div>
+            </div>
 
-          <button 
-            onClick={handleLogout}
-            className="px-3 py-1.5 border border-red-500/30 hover:bg-red-550/10 text-red-400 text-xs font-bold rounded-lg transition"
-          >
-            Wyloguj
-          </button>
-        </div>
-
-        {/* MOBILE HAMBURGER BUTTON */}
-        <button 
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 text-[var(--color-gold-light)] hover:text-white transition-colors"
-        >
-          {mobileMenuOpen ? '✕' : '☰'}
-        </button>
-      </header>
-
-      {/* MOBILE EXPANDED MENU TRAY */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-[var(--bg-top)]/95 backdrop-blur-xl border-b border-[var(--color-gold)]/20 p-4 space-y-3 animate-fade-in text-sm font-semibold shadow-2xl">
-          <div className="pb-2 border-b border-[var(--color-gold)]/10 select-none">
-            <p className="text-slate-400 text-xs">Menu zalogowanego:</p>
-            <p className="text-gold-gradient font-bold">{myName} ({role})</p>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => { setActiveTab('start'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'start' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'}`}>Dziś w pracy</button>
-            <button onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'dashboard' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'}`}>Mój grafik</button>
-            <button onClick={() => { setActiveTab('calendar'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'calendar' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'}`}>Grafik ogólny</button>
             <button 
-              onClick={() => { setActiveTab('proposals'); setMobileMenuOpen(false); }} 
-              className={`px-3 py-2 rounded-lg text-left flex items-center justify-between ${
-                activeTab === 'proposals' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'
-              }`}
+              onClick={() => setShowPassModal(true)}
+              className="px-3 py-1.5 bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 text-xs font-semibold rounded-lg transition"
             >
-              <span>Skrzynka wymian</span>
-              {activeProposalsCount > 0 && (
-                <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-red-600/90 text-white min-w-[20px] text-center shadow-lg shadow-red-500/20">
-                  {activeProposalsCount}
-                </span>
-              )}
+              Hasło 🔑
             </button>
+
             <button 
-              onClick={() => { setActiveTab('market'); setMobileMenuOpen(false); }} 
-              className={`px-3 py-2 rounded-lg text-left flex items-center justify-between ${
-                activeTab === 'market' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'
-              }`}
+              onClick={handleLogout}
+              className="px-3 py-1.5 border border-red-500/30 hover:bg-red-550/10 text-red-400 text-xs font-bold rounded-lg transition"
             >
-              <span>Giełda zmian</span>
-              {activeMarketCount > 0 && (
-                <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-red-600/90 text-white min-w-[20px] text-center animate-pulse shadow-lg shadow-red-500/20">
-                  {activeMarketCount}
-                </span>
-              )}
+              Wyloguj
             </button>
-            
-            {role === 'admin' && (
-              <>
-                <button onClick={() => { setActiveTab('admin'); setMobileMenuOpen(false); }} className={`px-3 py-2 text-left transition-colors ${activeTab === 'admin' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'text-emerald-500/70 hover:text-emerald-400'}`}>Panel Excel</button>
-              </>
-            )}
           </div>
-          <div className="pt-2 border-t border-[var(--color-gold)]/10 flex items-center justify-between gap-2">
-            <button onClick={() => setShowPassModal(true)} className="px-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-xs text-slate-300">Zmień Hasło</button>
-            <button onClick={handleLogout} className="px-4 py-2 border border-red-500/40 text-red-400 rounded-lg text-xs">Wyloguj</button>
-          </div>
-        </div>
-      )}
 
-      {/* CORE DESKTOP NAVIGATION ROW */}
-      <nav className="hidden md:flex bg-slate-950/20 border-b border-[var(--color-gold)]/20 px-6 gap-2 pt-2 overflow-x-auto items-end backdrop-blur-md relative z-30">
-        <button 
-          onClick={() => setActiveTab('start')}
-          className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
-            activeTab === 'start' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
-          }`}
-        >
-          {activeTab === 'start' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
-          <span className="relative z-10">Dziś w pracy</span>
-        </button>
-        <button 
-          onClick={() => setActiveTab('dashboard')}
-          className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
-            activeTab === 'dashboard' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
-          }`}
-        >
-          {activeTab === 'dashboard' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
-          <span className="relative z-10">Mój grafik</span>
-        </button>
-        <button 
-          onClick={() => setActiveTab('calendar')}
-          className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
-            activeTab === 'calendar' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
-          }`}
-        >
-          {activeTab === 'calendar' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
-          <span className="relative z-10">Grafik ogólny</span>
-        </button>
-        <button 
-          onClick={() => setActiveTab('proposals')}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
-            activeTab === 'proposals' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
-          }`}
-        >
-          {activeTab === 'proposals' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
-          <span className="relative z-10">Skrzynka wymian</span>
-          {activeProposalsCount > 0 && (
-            <span className="relative z-10 px-1.5 py-0.5 text-[10px] font-black rounded-full bg-red-600/90 text-white min-w-[18px] text-center animate-pulse leading-none flex items-center justify-center">
-              {activeProposalsCount}
-            </span>
-          )}
-        </button>
-        <button 
-          onClick={() => setActiveTab('market')}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
-            activeTab === 'market' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
-          }`}
-        >
-          {activeTab === 'market' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
-          <span className="relative z-10">Giełda zmian</span>
-          {activeMarketCount > 0 && (
-            <span className="relative z-10 px-1.5 py-0.5 text-[10px] font-black rounded-full bg-red-600/90 text-white min-w-[18px] text-center animate-pulse leading-none flex items-center justify-center">
-              {activeMarketCount}
-            </span>
-          )}
-        </button>
-
-        {/* Separator */}
-        <span className="w-px bg-[var(--color-gold)]/20 self-stretch my-2 ml-1 mr-1" />
-
-        {/* Admins subroutines */}
-        {role === 'admin' && (
+          {/* MOBILE HAMBURGER BUTTON */}
           <button 
-            onClick={() => setActiveTab('admin')}
-            className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all opacity-80 hover:opacity-100 ${
-              activeTab === 'admin' ? 'text-emerald-400 bg-emerald-500/10 border-b-2 border-emerald-500 pb-3' : 'text-emerald-500/70 hover:text-emerald-400 pb-2 hover:bg-slate-900/30'
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-[var(--color-gold-light)] hover:text-white transition-colors"
+          >
+            {mobileMenuOpen ? '✕' : '☰'}
+          </button>
+        </header>
+
+        {/* MOBILE EXPANDED MENU TRAY */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-slate-950/95 border-t border-[var(--color-gold)]/20 p-4 space-y-3 animate-fade-in text-sm font-semibold shadow-2xl">
+            <div className="pb-2 border-b border-[var(--color-gold)]/10 select-none">
+              <p className="text-slate-400 text-xs">Menu zalogowanego:</p>
+              <p className="text-gold-gradient font-bold">{myName} ({role})</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => { setActiveTab('start'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'start' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'}`}>Dziś w pracy</button>
+              <button onClick={() => { setActiveTab('dashboard'); setDashboardSubTab('calendar'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'dashboard' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'}`}>Mój grafik</button>
+              <button onClick={() => { setActiveTab('calendar'); setMobileMenuOpen(false); }} className={`px-3 py-2 rounded-lg text-left ${activeTab === 'calendar' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'}`}>Grafik ogólny</button>
+              <button 
+                onClick={() => { setActiveTab('proposals'); setMobileMenuOpen(false); }} 
+                className={`px-3 py-2 rounded-lg text-left flex items-center justify-between ${
+                  activeTab === 'proposals' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'
+                }`}
+              >
+                <span>Skrzynka wymian</span>
+                {activeProposalsCount > 0 && (
+                  <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-red-600/90 text-white min-w-[20px] text-center shadow-lg shadow-red-500/20">
+                    {activeProposalsCount}
+                  </span>
+                )}
+              </button>
+              <button 
+                onClick={() => { setActiveTab('market'); setMobileMenuOpen(false); }} 
+                className={`px-3 py-2 rounded-lg text-left flex items-center justify-between ${
+                  activeTab === 'market' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'
+                }`}
+              >
+                <span>Giełda zmian</span>
+                {activeMarketCount > 0 && (
+                  <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-red-600/90 text-white min-w-[20px] text-center animate-pulse shadow-lg shadow-red-500/20">
+                    {activeMarketCount}
+                  </span>
+                )}
+              </button>
+              
+              {role === 'admin' && (
+                <>
+                  <button onClick={() => { setActiveTab('admin'); setMobileMenuOpen(false); }} className={`px-3 py-2 text-left transition-colors ${activeTab === 'admin' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'text-emerald-500/70 hover:text-emerald-400'}`}>Panel Excel</button>
+                </>
+              )}
+            </div>
+            <div className="pt-2 border-t border-[var(--color-gold)]/10 flex items-center justify-between gap-2">
+              <button onClick={() => setShowPassModal(true)} className="px-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-xs text-slate-300">Zmień Hasło</button>
+              <button onClick={handleLogout} className="px-4 py-2 border border-red-500/40 text-red-400 rounded-lg text-xs">Wyloguj</button>
+            </div>
+          </div>
+        )}
+
+        {/* CORE DESKTOP NAVIGATION ROW */}
+        <nav className="hidden md:flex bg-transparent border-t border-[var(--color-gold)]/15 px-6 gap-2 pt-2 overflow-x-auto items-end relative z-30">
+          <button 
+            onClick={() => setActiveTab('start')}
+            className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
+              activeTab === 'start' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
             }`}
           >
-            Panel Excel
+            {activeTab === 'start' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+            <span className="relative z-10">Dziś w pracy</span>
           </button>
-        )}
-      </nav>
+          <button 
+            onClick={() => { setActiveTab('dashboard'); setDashboardSubTab('calendar'); }}
+            className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
+              activeTab === 'dashboard' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
+            }`}
+          >
+            {activeTab === 'dashboard' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+            <span className="relative z-10">Mój grafik</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('calendar')}
+            className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
+              activeTab === 'calendar' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
+            }`}
+          >
+            {activeTab === 'calendar' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+            <span className="relative z-10">Grafik ogólny</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('proposals')}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
+              activeTab === 'proposals' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
+            }`}
+          >
+            {activeTab === 'proposals' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+            <span className="relative z-10">Skrzynka wymian</span>
+            {activeProposalsCount > 0 && (
+              <span className="relative z-10 px-1.5 py-0.5 text-[10px] font-black rounded-full bg-red-600/90 text-white min-w-[18px] text-center animate-pulse leading-none flex items-center justify-center">
+                {activeProposalsCount}
+              </span>
+            )}
+          </button>
+          <button 
+            onClick={() => setActiveTab('market')}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
+              activeTab === 'market' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
+            }`}
+          >
+            {activeTab === 'market' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+            <span className="relative z-10">Giełda zmian</span>
+            {activeMarketCount > 0 && (
+              <span className="relative z-10 px-1.5 py-0.5 text-[10px] font-black rounded-full bg-red-600/90 text-white min-w-[18px] text-center animate-pulse leading-none flex items-center justify-center">
+                {activeMarketCount}
+              </span>
+            )}
+          </button>
+
+          {/* Separator */}
+          <span className="w-px bg-[var(--color-gold)]/20 self-stretch my-2 ml-1 mr-1" />
+
+          {/* Admins subroutines */}
+          {role === 'admin' && (
+            <button 
+              onClick={() => setActiveTab('admin')}
+              className={`px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all opacity-80 hover:opacity-100 ${
+                activeTab === 'admin' ? 'text-emerald-400 bg-emerald-500/10 border-b-2 border-emerald-500 pb-3' : 'text-emerald-500/70 hover:text-emerald-400 pb-2 hover:bg-slate-900/30'
+              }`}
+            >
+              Panel Excel
+            </button>
+          )}
+        </nav>
+      </div>
 
       {/* FLOATING ACTION OVERLAYS/MODALS/TOAST PANEL */}
       <div className="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-auto">
@@ -552,7 +555,7 @@ export default function App() {
       {/* PRIMARY VIEWS SWITCH COMPILER */}
       <main className="flex-1 overflow-y-auto py-6">
         {activeTab === 'start' && (
-          <StartView addToast={addToast} onNavigate={setActiveTab} />
+          <StartView addToast={addToast} onNavigate={(tab) => { setActiveTab(tab); if (tab === 'dashboard') setDashboardSubTab('calendar'); }} />
         )}
 
         {/* Dynamic customized Tab "dashboard" representing individual calendar */}
