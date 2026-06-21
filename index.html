@@ -1,20 +1,33 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Grafik LOT</title>
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#D4AF37" />
-    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Grafik LOT">
-    <link rel="apple-touch-icon" href="/icon.svg">
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+import { drizzle } from 'drizzle-orm/node-postgres';
+import pg from 'pg';
+import * as schema from './schema.ts';
 
+const { Pool } = pg;
+
+// Get database connection string from environment variables
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL environment variable is required. Please populate this environment variable.');
+}
+
+export const createPool = () => {
+  return new Pool({
+    connectionString,
+    connectionTimeoutMillis: 15000,
+    ssl: {
+      rejectUnauthorized: false
+    }
+  });
+};
+
+// Create a pool instance.
+const pool = createPool();
+
+// Prevent unhandled pool-level errors from crashing the application
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle SQL pool client:', err);
+});
+
+// Initialize Drizzle with the pool and schema.
+export const db = drizzle(pool, { schema });
