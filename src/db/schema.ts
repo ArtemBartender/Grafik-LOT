@@ -11,6 +11,9 @@ export const users = pgTable('users', {
   hourlyRatePln: doublePrecision('hourly_rate_pln').default(28.10),
   taxPercent: doublePrecision('tax_percent').default(12.0),
   bonusPercent: doublePrecision('bonus_percent').default(0.0),
+  notifyNewSchedule: boolean('notify_new_schedule').default(true),
+  notifyNewMarket: boolean('notify_new_market').default(true),
+  notifySwapRequests: boolean('notify_swap_requests').default(true),
 });
 
 export const shifts = pgTable('shifts', {
@@ -182,3 +185,20 @@ export const controlEventsRelations = relations(controlEvents, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const notifications = pgTable('notifications', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  isRead: boolean('is_read').notNull().default(false),
+  createdAt: text('created_at').notNull(), // ISO String
+});
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
+
