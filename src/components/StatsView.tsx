@@ -338,10 +338,12 @@ export default function StatsView({ addToast }: StatsViewProps) {
                     <div className="absolute top-[-26px] hidden group-hover:block bg-slate-950 border border-slate-700 text-[10px] text-slate-200 px-1.5 py-0.5 rounded shadow-lg z-20 whitespace-nowrap">
                       {bar.hours.toFixed(1)} h
                     </div>
-                    <div className="w-full relative rounded-t-sm transition-all" style={{ height: `${heightPct}%` }}>
-                      <div className={`absolute inset-0 rounded-t-sm ${
-                        bar.done ? 'bg-gradient-to-t from-emerald-600 to-emerald-450' : 'bg-gradient-to-t from-indigo-800 to-indigo-500 opacity-60'
-                      }`} />
+                    <div className="w-full h-20 flex flex-col justify-end">
+                      <div className="w-full relative rounded-t-sm transition-all" style={{ height: `${heightPct}%` }}>
+                        <div className={`absolute inset-0 rounded-t-sm ${
+                          bar.done ? 'bg-gradient-to-t from-emerald-600 to-emerald-450' : 'bg-gradient-to-t from-indigo-800 to-indigo-500 opacity-60'
+                        }`} />
+                      </div>
                     </div>
                     <span className="text-[10px] text-slate-500 mt-2 font-mono font-bold">{bar.date}</span>
                   </div>
