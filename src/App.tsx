@@ -439,7 +439,7 @@ export default function App() {
               <span className="text-xs text-slate-400">Zalogowany: </span>
               <strong className="text-xs text-gold-gradient">{myName}</strong>
               <div className="text-[10px] font-bold text-slate-500 uppercase flex justify-end gap-1 mt-0.5">
-                Rola: <span className="text-[var(--color-gold-light)] font-extrabold">{role === 'admin' ? 'Coordinator(Admin)' : role === 'coordinator' ? 'Koordynator' : 'Pracownik (Waiters/Bar)'}</span>
+                Rola: <span className="text-[var(--color-gold-light)] font-extrabold">{role === 'admin' ? 'Coordinator (Admin)' : role === 'coordinator' ? 'Koordynator' : 'Pracownik (Waiters/Bar)'}</span>
               </div>
             </div>
 
