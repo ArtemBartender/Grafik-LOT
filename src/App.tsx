@@ -1115,7 +1115,7 @@ export default function App() {
         )}
 
         {activeTab === 'formatka' && (
-          <FormatkaView addToast={addToast} />
+          <FormatkaView addToast={addToast} role={role} userId={claims?.user_id || null} />
         )}
 
         {role === 'admin' && activeTab === 'control' && (
