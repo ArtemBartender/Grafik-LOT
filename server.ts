@@ -9,7 +9,8 @@ import fs from 'fs';
 import { db } from './src/db/index.ts';
 import { 
   users, shifts, notes, proposals, marketOffers, 
-  controlEvents, deletedEvents, coordinatorReports 
+  controlEvents, deletedEvents, coordinatorReports,
+  formatkaPreferences, formatkaLocks
 } from './src/db/schema.ts';
 import { eq, and, or, like, desc, asc, sql } from 'drizzle-orm';
 import { authGuard, AuthRequest } from './src/lib/auth-middleware.ts';
@@ -1384,6 +1385,303 @@ app.get('/api/my-notes', authGuard, async (req: AuthRequest, res) => {
     res.json(notesList);
   } catch (err: any) {
     res.status(500).json({ error: 'Błąd pobierania notatek: ' + err.message });
+  }
+});
+
+
+// ==========================================
+// FORMATKA (SCHEDULE PREFERENCES) ENDPOINTS
+// ==========================================
+
+// Get formatka state and current user's preferences
+app.get('/api/formatka', authGuard, async (req: AuthRequest, res) => {
+  try {
+    const user = req.user;
+    const { month } = req.query; // YYYY-MM
+    if (!month || typeof month !== 'string') {
+      return res.status(400).json({ error: 'Miesiąc jest wymagany (YYYY-MM)' });
+    }
+
+    // 1. Check lock status
+    const lockRows = await db.select().from(formatkaLocks).where(eq(formatkaLocks.month, month));
+    const isLocked = lockRows.length > 0 ? lockRows[0].isLocked : false;
+
+    // 2. Fetch user's preferences
+    const prefRows = await db.select()
+      .from(formatkaPreferences)
+      .where(and(eq(formatkaPreferences.userId, user.id), eq(formatkaPreferences.month, month)));
+    const preferences = prefRows.length > 0 ? (prefRows[0].preferences || {}) : {};
+
+    res.json({ isLocked, preferences });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Błąd formatki: ' + err.message });
+  }
+});
+
+// Save or update user preferences
+app.post('/api/formatka', authGuard, async (req: AuthRequest, res) => {
+  try {
+    const user = req.user;
+    const { month, preferences } = req.body; // YYYY-MM and { [day]: 'W' | 'I' | 'II' | '' }
+    if (!month || typeof month !== 'string') {
+      return res.status(400).json({ error: 'Miesiąc jest wymagany' });
+    }
+
+    // Check lock status
+    const lockRows = await db.select().from(formatkaLocks).where(eq(formatkaLocks.month, month));
+    const isLocked = lockRows.length > 0 ? lockRows[0].isLocked : false;
+
+    if (isLocked && user.role !== 'admin') {
+      return res.status(403).json({ error: 'Dodawanie i edycja życzeń na ten miesiąc są zablokowane przez administratora.' });
+    }
+
+    // Fetch existing preference row
+    const existing = await db.select()
+      .from(formatkaPreferences)
+      .where(and(eq(formatkaPreferences.userId, user.id), eq(formatkaPreferences.month, month)));
+
+    if (existing.length > 0) {
+      await db.update(formatkaPreferences)
+        .set({ preferences: preferences || {}, updatedAt: new Date().toISOString() })
+        .where(eq(formatkaPreferences.id, existing[0].id));
+    } else {
+      await db.insert(formatkaPreferences)
+        .values({
+          userId: user.id,
+          month,
+          preferences: preferences || {},
+          updatedAt: new Date().toISOString()
+        });
+    }
+
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Błąd zapisu formatki: ' + err.message });
+  }
+});
+
+// Admin panel view to list all user preferences and lock/unlock
+app.get('/api/formatka/admin', authGuard, async (req: AuthRequest, res) => {
+  try {
+    const user = req.user;
+    if (user.role !== 'admin' && user.role !== 'coordinator') {
+      return res.status(403).json({ error: 'Brak uprawnień administratora' });
+    }
+    const { month } = req.query; // YYYY-MM
+    if (!month || typeof month !== 'string') {
+      return res.status(400).json({ error: 'Miesiąc jest wymagany' });
+    }
+
+    // 1. Check lock status
+    const lockRows = await db.select().from(formatkaLocks).where(eq(formatkaLocks.month, month));
+    const isLocked = lockRows.length > 0 ? lockRows[0].isLocked : false;
+
+    // 2. Fetch all personnel
+    const allUsers = await db.select().from(users);
+
+    // 3. Fetch all preferences for this month
+    const allPrefs = await db.select()
+      .from(formatkaPreferences)
+      .where(eq(formatkaPreferences.month, month));
+
+    // Map each user to their submission status and response preferences
+    const result = allUsers.map(u => {
+      const uPref = allPrefs.find(p => p.userId === u.id);
+      const prefObj = uPref ? (uPref.preferences as Record<string, string>) || {} : {};
+      
+      // Calculate if the user has filled at least one preference day with a valid option
+      const nonEmpties = Object.values(prefObj).filter(v => v === 'W' || v === 'I' || v === 'II');
+      const hasFilled = nonEmpties.length > 0;
+
+      return {
+        id: u.id,
+        fullName: u.fullName,
+        email: u.email,
+        role: u.role,
+        hasFilled,
+        preferences: prefObj,
+        updatedAt: uPref ? uPref.updatedAt : null
+      };
+    });
+
+    res.json({ isLocked, users: result });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Błąd panelu formatki: ' + err.message });
+  }
+});
+
+// Lock/Unlock formatka for a given month
+app.post('/api/formatka/admin/lock', authGuard, async (req: AuthRequest, res) => {
+  try {
+    const user = req.user;
+    if (user.role !== 'admin') {
+      return res.status(403).json({ error: 'Tylko administrator może zablokować/odblokować edycję' });
+    }
+    const { month, isLocked } = req.body;
+    if (!month || typeof month !== 'string' || isLocked === undefined) {
+      return res.status(400).json({ error: 'Miesiąc i status blokady są wymagane' });
+    }
+
+    const existing = await db.select().from(formatkaLocks).where(eq(formatkaLocks.month, month));
+    if (existing.length > 0) {
+      await db.update(formatkaLocks)
+        .set({ isLocked })
+        .where(eq(formatkaLocks.id, existing[0].id));
+    } else {
+      await db.insert(formatkaLocks)
+        .values({ month, isLocked });
+    }
+
+    res.json({ success: true, isLocked });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Błąd blokowania formatki: ' + err.message });
+  }
+});
+
+// Download formatka as Excel (.xlsx) file
+app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
+  try {
+    const user = req.user;
+    if (user.role !== 'admin' && user.role !== 'coordinator') {
+      return res.status(403).json({ error: 'Brak uprawnień administratora' });
+    }
+    const { month } = req.query; // YYYY-MM
+    if (!month || typeof month !== 'string') {
+      return res.status(400).json({ error: 'Miesiąc jest wymagany' });
+    }
+
+    // 1. Fetch data
+    const allUsers = await db.select().from(users);
+    const allPrefs = await db.select()
+      .from(formatkaPreferences)
+      .where(eq(formatkaPreferences.month, month));
+
+    // Get number of days in the requested year-month
+    const [yearStr, monthStr] = month.split('-');
+    const year = parseInt(yearStr);
+    const monthNum = parseInt(monthStr);
+    const daysInMonth = new Date(year, monthNum, 0).getDate();
+
+    // Create a new ExcelJS Workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(`Życzenia - ${month}`);
+
+    // Main title
+    worksheet.mergeCells('A1', 'E1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = `FORMATKA ŻYCZEŃ GRAFIKOWYCH - ${month}`;
+    titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF1E3A8A' } // Dark blue
+    };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    worksheet.getRow(1).height = 40;
+
+    // Table Headers
+    const headers = ['Pracownik', 'Rola'];
+    for (let day = 1; day <= daysInMonth; day++) {
+      headers.push(day.toString());
+    }
+    worksheet.addRow([]); // Blank spacer line
+    const headerRow = worksheet.addRow(headers);
+    headerRow.height = 25;
+
+    // Style Header Row
+    headerRow.eachCell((cell) => {
+      cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF0F172A' } // Slate-900
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF475569' } },
+        bottom: { style: 'thin', color: { argb: 'FF475569' } },
+        left: { style: 'thin', color: { argb: 'FF475569' } },
+        right: { style: 'thin', color: { argb: 'FF475569' } }
+      };
+    });
+
+    // Populate data
+    const sortedUsers = [...allUsers].sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+    sortedUsers.forEach(u => {
+      const uPref = allPrefs.find(p => p.userId === u.id);
+      const prefObj = uPref ? (uPref.preferences as Record<string, string>) || {} : {};
+
+      const rowData = [u.fullName, u.role === 'admin' ? 'Admin' : u.role === 'coordinator' ? 'Koordynator' : 'Pracownik'];
+      for (let day = 1; day <= daysInMonth; day++) {
+        const val = prefObj[day] || '';
+        rowData.push(val);
+      }
+      
+      const newRow = worksheet.addRow(rowData);
+      newRow.height = 20;
+
+      // Format individual row cells
+      newRow.eachCell((cell, colNumber) => {
+        cell.font = { name: 'Arial', size: 10 };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+        };
+
+        if (colNumber === 1) {
+          cell.alignment = { vertical: 'middle', horizontal: 'left' };
+          cell.font = { name: 'Arial', size: 10, bold: true };
+        } else if (colNumber === 2) {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          cell.font = { name: 'Arial', size: 9, italic: true };
+        } else {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          const val = cell.value?.toString().toUpperCase() || '';
+          if (val === 'W') {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFFEE2E2' } // Light red background for free day / Wolne
+            };
+            cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFEF4444' } };
+          } else if (val === 'I') {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFECFDF5' } // Light emerald green for I shift
+            };
+            cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF059669' } };
+          } else if (val === 'II') {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFEFF6FF' } // Light blue for II shift
+            };
+            cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF2563EB' } };
+          }
+        }
+      });
+    });
+
+    // Set columns widths
+    worksheet.getColumn(1).width = 25; // Employee name
+    worksheet.getColumn(2).width = 15; // Role
+    for (let day = 1; day <= daysInMonth; day++) {
+      worksheet.getColumn(2 + day).width = 5; // Preference cell columns
+    }
+
+    // Write back response
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=formatka_${month}.xlsx`);
+    
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (err: any) {
+    res.status(500).json({ error: 'Błąd generowania pliku Excel: ' + err.message });
   }
 });
 
