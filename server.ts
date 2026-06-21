@@ -1,7 +1,6 @@
 import express from 'express';
 import path from 'path';
 import crypto from 'crypto';
-import { createServer as createViteServer } from 'vite';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 import fs from 'fs';
@@ -3158,6 +3157,7 @@ app.post('/api/upload-xlsx', authGuard, requireRole('admin', 'coordinator'), exp
 // Serve static assets and handle routing via Vite middleware
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
