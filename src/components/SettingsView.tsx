@@ -166,7 +166,7 @@ export default function SettingsView({ addToast }: SettingsViewProps) {
                     className="w-4 h-4 rounded border-slate-800 text-indigo-600 bg-slate-950 focus:ring-indigo-500 mt-0.5 accent-indigo-550"
                   />
                   <div>
-                    <span className="font-bold text-slate-200 group-hover:text-white transition">Opublikowanie nowej rozpiskie 📅</span>
+                    <span className="font-bold text-slate-200 group-hover:text-white transition">Opublikowanie nowej rozpiski 📅</span>
                     <p className="text-[10px] text-slate-500 font-medium">Bądź powiadamiany, gdy koordynator wgra nowy grafik LOT na kolejny miesiąc.</p>
                   </div>
                 </label>
