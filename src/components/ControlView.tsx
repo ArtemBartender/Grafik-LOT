@@ -488,7 +488,7 @@ export default function ControlView({ addToast }: ControlViewProps) {
                   type="text" 
                   value={formReason}
                   onChange={(e) => setFormReason(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-950 text-slate-100 text-sm placholder-slate-550"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-slate-950 text-slate-100 text-sm placeholder-slate-550"
                   placeholder="np. korekta planu..."
                 />
               </div>
