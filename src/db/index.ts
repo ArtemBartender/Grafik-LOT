@@ -4,8 +4,12 @@ import * as schema from './schema.ts';
 
 const { Pool } = pg;
 
-// Fallback to the user's provided Render string if DATABASE_URL is missing
-const connectionString = process.env.DATABASE_URL || 'postgresql://grafik_lot_user:ZX40iVGLCZwwUwQAxpRogWs1RvlqH9ZL@dpg-d8p884s8aovs73b41t2g-a.frankfurt-postgres.render.com/grafik_lot?sslmode=require';
+// Get database connection string from environment variables
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL environment variable is required. Please populate this environment variable.');
+}
 
 export const createPool = () => {
   return new Pool({
