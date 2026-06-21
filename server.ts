@@ -17,7 +17,7 @@ import { authGuard, AuthRequest } from './src/lib/auth-middleware.ts';
 const app = express();
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 // Helper password hasher: SHA256 (Simple and native)
 function hashPassword(password: string): string {
@@ -151,6 +151,15 @@ function generateMockShifts(): any[] {
 // Seed function
 async function seedDBIfEmpty() {
   try {
+    // Schema Patch for backwards compatibility (ensuring bonus_percent exists in users table)
+    try {
+      console.log('[Database Schema Sync] Checking if bonus_percent column exists...');
+      await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "bonus_percent" double precision DEFAULT 0;`);
+      console.log('[Database Schema Sync] Column bonus_percent ensured successfully!');
+    } catch (patchErr: any) {
+      console.warn('[Database Schema Sync Warn] Failed to patch bonus_percent: ' + patchErr.message);
+    }
+
     const checkUsers = await db.select().from(users).limit(1);
     if (checkUsers.length === 0) {
       console.log('[Database Seeding] Seeding default users...');
@@ -388,8 +397,9 @@ app.get('/api/me/settings', authGuard, async (req: AuthRequest, res) => {
   try {
     const user = req.user;
     res.json({
-      hourly_rate_pln: user.hourlyRatePln || 28.10,
-      tax_percent: user.taxPercent || 12.0
+      hourly_rate_pln: user.hourlyRatePln !== undefined && user.hourlyRatePln !== null ? user.hourlyRatePln : 28.10,
+      tax_percent: user.taxPercent !== undefined && user.taxPercent !== null ? user.taxPercent : 12.0,
+      bonus_percent: user.bonusPercent !== undefined && user.bonusPercent !== null ? user.bonusPercent : 0.0
     });
   } catch (err: any) {
     res.status(500).json({ error: 'Błąd pobierania ustawień: ' + err.message });
@@ -399,12 +409,13 @@ app.get('/api/me/settings', authGuard, async (req: AuthRequest, res) => {
 // Update User stats rate/tax config
 app.post('/api/me/settings', authGuard, async (req: AuthRequest, res) => {
   try {
-    const { hourly_rate_pln, tax_percent } = req.body;
+    const { hourly_rate_pln, tax_percent, bonus_percent } = req.body;
     const user = req.user;
 
     const updates: any = {};
-    if (hourly_rate_pln != null) updates.hourlyRatePln = Number(hourly_rate_pln);
-    if (tax_percent != null) updates.taxPercent = Number(tax_percent);
+    updates.hourlyRatePln = hourly_rate_pln === '' || hourly_rate_pln == null ? 0.0 : Number(hourly_rate_pln);
+    updates.taxPercent = tax_percent === '' || tax_percent == null ? 0.0 : Number(tax_percent);
+    updates.bonusPercent = bonus_percent === '' || bonus_percent == null ? 0.0 : Number(bonus_percent);
 
     await db.update(users).set(updates).where(eq(users.id, user.id));
     res.json({ success: true });
@@ -829,6 +840,11 @@ app.post('/api/proposals', authGuard, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Pracownik docelowy nie ma zmiany w podanym dniu' });
     }
 
+    const todayISO = new Date().toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' }).split('.').reverse().join('-');
+    if (String(my_date) <= todayISO || String(their_date) <= todayISO) {
+      return res.status(400).json({ error: 'Zaproponowana wymiana musi dotyczyć wyłącznie dni przyszłych (od jutra).' });
+    }
+
     const inserted = await db.insert(proposals).values({
       requesterId: user.id,
       targetUserId: Number(target_user_id),
@@ -1128,6 +1144,11 @@ app.post('/api/market/offers/:shiftId', authGuard, async (req: AuthRequest, res)
 
     const shift = matchedShifts[0];
 
+    const todayISO = new Date().toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' }).split('.').reverse().join('-');
+    if (shift.shiftDate <= todayISO) {
+      return res.status(400).json({ error: 'Nie możesz wystawić na giełdę zmiany z dzisiaj lub z przeszłości.' });
+    }
+
     // Prevent posting duplicates
     const duplicates = await db.select().from(marketOffers).where(
       and(
@@ -1279,8 +1300,9 @@ app.get('/api/my-stats', authGuard, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Brak miesiąca' });
     }
 
-    const rate = user.hourlyRatePln || 28.10;
-    const tax = user.taxPercent || 12.0;
+    const rate = user.hourlyRatePln !== undefined && user.hourlyRatePln !== null ? user.hourlyRatePln : 28.10;
+    const tax = user.taxPercent !== undefined && user.taxPercent !== null ? user.taxPercent : 12.0;
+    const bonus = user.bonusPercent !== undefined && user.bonusPercent !== null ? user.bonusPercent : 0.0;
 
     const monthPrefix = String(month);
     const userShifts = await db.select().from(shifts).where(
@@ -1330,8 +1352,8 @@ app.get('/api/my-stats', authGuard, async (req: AuthRequest, res) => {
       }
     });
 
-    const total_net_done = hours_done * rate * (1 - tax / 100);
-    const total_net_all = (hours_done + hours_left) * rate * (1 - tax / 100);
+    const total_net_done = hours_done * rate * (1 - tax / 100) * (1 + bonus / 100);
+    const total_net_all = (hours_done + hours_left) * rate * (1 - tax / 100) * (1 + bonus / 100);
 
     res.json({
       hours_done: Number(hours_done.toFixed(2)),
