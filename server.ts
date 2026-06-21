@@ -1555,6 +1555,9 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
     const allPrefs = await db.select()
       .from(formatkaPreferences)
       .where(eq(formatkaPreferences.month, month));
+    const actualShifts = await db.select()
+      .from(shifts)
+      .where(like(shifts.shiftDate, `${month}%`));
 
     // Get number of days in the requested year-month
     const [yearStr, monthStr] = month.split('-');
@@ -1566,112 +1569,271 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(`Życzenia - ${month}`);
 
-    // Main title
-    worksheet.mergeCells('A1', 'E1');
-    const titleCell = worksheet.getCell('A1');
-    titleCell.value = `FORMATKA ŻYCZEŃ GRAFIKOWYCH - ${month}`;
-    titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
-    titleCell.fill = {
+    // Helper to determine if a day is a weekend (Saturday or Sunday)
+    const isWeekendDay = (d: number) => {
+      const date = new Date(year, monthNum - 1, d);
+      const dayOfWeek = date.getDay();
+      return dayOfWeek === 0 || dayOfWeek === 6;
+    };
+
+    // Style helper for borders
+    const thinBorder = {
+      top: { style: 'thin' as const, color: { argb: 'FFBFBFBF' } },
+      bottom: { style: 'thin' as const, color: { argb: 'FFBFBFBF' } },
+      left: { style: 'thin' as const, color: { argb: 'FFBFBFBF' } },
+      right: { style: 'thin' as const, color: { argb: 'FFBFBFBF' } }
+    };
+
+    // Row 1: Header (Nazwisko i imię, days)
+    const row1Values = ['Nazwisko i imię'];
+    const formattedMonth = monthNum < 10 ? '0' + monthNum : monthNum.toString();
+    for (let day = 1; day <= daysInMonth; day++) {
+      row1Values.push(`${day}.${formattedMonth}`);
+    }
+    row1Values.push('Dni pracy'); // heading for the SUM column at the end: "Количество рабочих дней"
+
+    const row1 = worksheet.addRow(row1Values);
+    row1.height = 30;
+    row1.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+    row1.getCell(1).font = { name: 'Arial', size: 10, bold: true };
+    row1.getCell(1).fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FF1E3A8A' } // Dark blue
+      fgColor: { argb: 'FFDDEBF7' } // Light blue/grey
     };
-    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
-    worksheet.getRow(1).height = 40;
+    row1.getCell(1).border = thinBorder;
 
-    // Table Headers
-    const headers = ['Pracownik', 'Rola'];
-    for (let day = 1; day <= daysInMonth; day++) {
-      headers.push(day.toString());
-    }
-    worksheet.addRow([]); // Blank spacer line
-    const headerRow = worksheet.addRow(headers);
-    headerRow.height = 25;
-
-    // Style Header Row
-    headerRow.eachCell((cell) => {
-      cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF0F172A' } // Slate-900
-      };
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = row1.getCell(d + 1);
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      cell.border = {
-        top: { style: 'thin', color: { argb: 'FF475569' } },
-        bottom: { style: 'thin', color: { argb: 'FF475569' } },
-        left: { style: 'thin', color: { argb: 'FF475569' } },
-        right: { style: 'thin', color: { argb: 'FF475569' } }
-      };
-    });
+      cell.font = { name: 'Arial', size: 9, bold: true };
+      cell.border = thinBorder;
+      if (isWeekendDay(d)) {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFC6E0B4' } // soft light green
+        };
+      } else {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFFFFF' }
+        };
+      }
+    }
+    const lastColIndex = daysInMonth + 2;
+    const lastCellRow1 = row1.getCell(lastColIndex);
+    lastCellRow1.alignment = { vertical: 'middle', horizontal: 'center' };
+    lastCellRow1.font = { name: 'Arial', size: 9, bold: true };
+    lastCellRow1.border = thinBorder;
+    lastCellRow1.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFDDEBF7' } // Light blue/grey
+    };
 
-    // Populate data
+    // Function to generate and format PLAN row
+    const addPlanRow = () => {
+      const planValues = ['PLAN'];
+      for (let d = 1; d <= daysInMonth; d++) {
+        planValues.push(isWeekendDay(d) ? '9' : '10');
+      }
+      planValues.push('');
+      const r = worksheet.addRow(planValues);
+      r.height = 20;
+      r.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      r.getCell(1).font = { name: 'Arial', size: 10, bold: true };
+      r.getCell(1).border = thinBorder;
+      r.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const cell = r.getCell(d + 1);
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.font = { name: 'Arial', size: 10, bold: true };
+        cell.border = thinBorder;
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFD966' } // soft yellow
+        };
+      }
+      r.getCell(lastColIndex).border = thinBorder;
+      r.getCell(lastColIndex).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+    };
+
+    // Function to generate and format BRAKI row
+    const addBrakiRow = () => {
+      const brakiValues = ['BRAKI'];
+      const hasShiftsInMonth = actualShifts.length > 0;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        if (!hasShiftsInMonth) {
+          brakiValues.push('');
+        } else {
+          const formattedM = monthNum < 10 ? '0' + monthNum : monthNum.toString();
+          const formattedD = d < 10 ? '0' + d : d.toString();
+          const dateStr = `${year}-${formattedM}-${formattedD}`;
+          
+          const actualCount = actualShifts.filter(s => s.shiftDate === dateStr).length;
+          const limit = isWeekendDay(d) ? 9 : 10;
+          const brakiVal = actualCount - limit;
+          brakiValues.push(brakiVal.toString());
+        }
+      }
+      brakiValues.push('');
+      const r = worksheet.addRow(brakiValues);
+      r.height = 20;
+      r.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      r.getCell(1).font = { name: 'Arial', size: 10, bold: true };
+      r.getCell(1).border = thinBorder;
+      r.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const cell = r.getCell(d + 1);
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = thinBorder;
+        const val = cell.value?.toString() || '';
+        
+        if (val === '') {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFFFF' } // White background for unfilled
+          };
+        } else if (val.startsWith('-')) {
+          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFF0000' } // Deep red background
+          };
+        } else {
+          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF000000' } };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFCE4D6' } // Soft orange-red/pink background
+          };
+        }
+      }
+      r.getCell(lastColIndex).border = thinBorder;
+      r.getCell(lastColIndex).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+    };
+
+    // Row 2: PLAN
+    addPlanRow();
+
+    // Row 3: BRAKI
+    addBrakiRow();
+
+    // User rows
     const sortedUsers = [...allUsers].sort((a, b) => a.fullName.localeCompare(b.fullName));
 
     sortedUsers.forEach(u => {
       const uPref = allPrefs.find(p => p.userId === u.id);
       const prefObj = uPref ? (uPref.preferences as Record<string, string>) || {} : {};
 
-      const rowData = [u.fullName, u.role === 'admin' ? 'Admin' : u.role === 'coordinator' ? 'Koordynator' : 'Pracownik'];
-      for (let day = 1; day <= daysInMonth; day++) {
-        const val = prefObj[day] || '';
-        rowData.push(val);
-      }
-      
-      const newRow = worksheet.addRow(rowData);
-      newRow.height = 20;
-
-      // Format individual row cells
-      newRow.eachCell((cell, colNumber) => {
-        cell.font = { name: 'Arial', size: 10 };
-        cell.border = {
-          top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-          left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
-        };
-
-        if (colNumber === 1) {
-          cell.alignment = { vertical: 'middle', horizontal: 'left' };
-          cell.font = { name: 'Arial', size: 10, bold: true };
-        } else if (colNumber === 2) {
-          cell.alignment = { vertical: 'middle', horizontal: 'center' };
-          cell.font = { name: 'Arial', size: 9, italic: true };
+      const rowData = [u.fullName];
+      let shiftCount = 0;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const val = prefObj[d] || '';
+        if (val === 'I') {
+          rowData.push('1');
+          shiftCount++;
+        } else if (val === 'II') {
+          rowData.push('2');
+          shiftCount++;
+        } else if (val === 'W') {
+          rowData.push('X');
         } else {
-          cell.alignment = { vertical: 'middle', horizontal: 'center' };
-          const val = cell.value?.toString().toUpperCase() || '';
-          if (val === 'W') {
+          rowData.push('');
+        }
+      }
+
+      // Calculate working days count (from actual laid-out shifts, or fallback to wishes count if empty)
+      const userActualShifts = actualShifts.filter(s => s.userId === u.id);
+      const displayDaysCount = actualShifts.length > 0 ? userActualShifts.length : shiftCount;
+      rowData.push(displayDaysCount > 0 ? displayDaysCount.toString() : '');
+
+      const userRow = worksheet.addRow(rowData);
+      userRow.height = 20;
+
+      const nameCell = userRow.getCell(1);
+      nameCell.font = { name: 'Arial', size: 10, bold: true };
+      nameCell.alignment = { vertical: 'middle', horizontal: 'left' };
+      nameCell.border = thinBorder;
+      nameCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const cell = userRow.getCell(d + 1);
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = thinBorder;
+        const val = cell.value?.toString() || '';
+
+        if (val === '1') {
+          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF000000' } };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFFFF' } // Simply black on standard white background (colors are added after layout)
+          };
+        } else if (val === '2') {
+          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF000000' } };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFFFF' } // Simply black on standard white background (colors are added after layout)
+          };
+        } else if (val === 'X') {
+          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFF0000' } };
+          if (isWeekendDay(d)) {
             cell.fill = {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: 'FFFEE2E2' } // Light red background for free day / Wolne
+              fgColor: { argb: 'FFC6E0B4' } // Weekend soft green
             };
-            cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFEF4444' } };
-          } else if (val === 'I') {
+          } else {
             cell.fill = {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: 'FFECFDF5' } // Light emerald green for I shift
+              fgColor: { argb: 'FFFFFFFF' }
             };
-            cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF059669' } };
-          } else if (val === 'II') {
+          }
+        } else {
+          if (isWeekendDay(d)) {
             cell.fill = {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: 'FFEFF6FF' } // Light blue for II shift
+              fgColor: { argb: 'FFC6E0B4' } // Weekend soft green
             };
-            cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF2563EB' } };
+          } else {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFFFFFFF' }
+            };
           }
         }
-      });
+      }
+
+      const sumCell = userRow.getCell(lastColIndex);
+      sumCell.font = { name: 'Arial', size: 10, bold: true };
+      sumCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      sumCell.border = thinBorder;
+      sumCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
     });
+
+    // Add bottom rows (BRAKI and PLAN) to match layout
+    addBrakiRow();
+    addPlanRow();
 
     // Set columns widths
     worksheet.getColumn(1).width = 25; // Employee name
-    worksheet.getColumn(2).width = 15; // Role
-    for (let day = 1; day <= daysInMonth; day++) {
-      worksheet.getColumn(2 + day).width = 5; // Preference cell columns
+    for (let d = 1; d <= daysInMonth; d++) {
+      worksheet.getColumn(d + 1).width = 4.2;
     }
+    worksheet.getColumn(lastColIndex).width = 6.5;
 
     // Write back response
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
