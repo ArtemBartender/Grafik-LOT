@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { apiCall, getToken } from '../lib/api';
 
 interface FormatkaViewProps {
+  role: string;
+  userId: number | null;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
@@ -15,7 +17,7 @@ interface UserPreferences {
   updatedAt: string | null;
 }
 
-export default function FormatkaView({ addToast }: FormatkaViewProps) {
+export default function FormatkaView({ addToast, role, userId }: FormatkaViewProps) {
   // Date and Months calculation
   const getInitialMonth = () => {
     const d = new Date();
@@ -27,8 +29,8 @@ export default function FormatkaView({ addToast }: FormatkaViewProps) {
   };
 
   const [selectedMonth, setSelectedMonth] = useState<string>(getInitialMonth());
-  const [currentUserRole, setCurrentUserRole] = useState<string>('user');
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const currentUserRole = role;
+  const currentUserId = userId;
   
   // Formatka core states
   const [isLocked, setIsLocked] = useState<boolean>(false);
@@ -44,23 +46,6 @@ export default function FormatkaView({ addToast }: FormatkaViewProps) {
 
   // Selected Day for touch-popover on mobile
   const [selectedDayToEdit, setSelectedDayToEdit] = useState<number | null>(null);
-
-  // Fetch roles/ids from JWT claims
-  useEffect(() => {
-    const token = getToken();
-    if (token) {
-      try {
-        const parts = token.split('.');
-        if (parts.length >= 2) {
-          const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-          setCurrentUserRole(payload.role || 'user');
-          setCurrentUserId(payload.uid || payload.user_id || null);
-        }
-      } catch (e) {
-        console.error('Error reading JWT:', e);
-      }
-    }
-  }, []);
 
   // Fetch core formatka data (lock status, current user preferences)
   const fetchFormatkaData = async () => {
