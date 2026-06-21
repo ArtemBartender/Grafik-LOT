@@ -259,44 +259,39 @@ export default function StatsView({ addToast }: StatsViewProps) {
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div>
+          <div className="opacity-75">
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
               Stawka za godzinę (PLN brutto)
             </label>
             <div className="relative">
               <input
                 type="number"
-                step="0.1"
-                min="0"
+                disabled
                 value={rate}
-                onChange={(e) => setRate(e.target.value)}
-                className="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 text-slate-100 text-sm rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-550/30 font-bold font-mono"
+                className="w-full bg-slate-950/60 border border-slate-850 text-slate-400 text-sm rounded-xl px-3.5 py-2.5 outline-none font-bold font-mono cursor-not-allowed"
               />
-              <span className="absolute right-3.5 top-2.5 text-xs text-slate-550 font-bold">zł/h</span>
+              <span className="absolute right-3.5 top-2.5 text-xs text-slate-600 font-bold">zł/h</span>
             </div>
           </div>
 
-          <div>
+          <div className="opacity-75">
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
               Podatek i ZUS (%)
             </label>
             <div className="relative">
               <input
                 type="number"
-                step="1"
-                min="0"
-                max="100"
+                disabled
                 value={tax}
-                onChange={(e) => setTax(e.target.value)}
-                className="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 text-slate-100 text-sm rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-550/30 font-bold font-mono"
+                className="w-full bg-slate-950/60 border border-slate-850 text-slate-400 text-sm rounded-xl px-3.5 py-2.5 outline-none font-bold font-mono cursor-not-allowed"
               />
-              <span className="absolute right-3.5 top-2.5 text-xs text-slate-550 font-bold">%</span>
+              <span className="absolute right-3.5 top-2.5 text-xs text-slate-600 font-bold">%</span>
             </div>
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
-              Premia i uznania (%)
+            <label className="block text-[10px] font-bold text-slate-100 uppercase mb-1.5 tracking-wider flex items-center gap-1.5">
+              <span>🌟</span> Premia i uznania (%)
             </label>
             <div className="relative">
               <input
@@ -305,20 +300,23 @@ export default function StatsView({ addToast }: StatsViewProps) {
                 min="0"
                 value={bonus}
                 onChange={(e) => setBonus(e.target.value)}
-                className="w-full bg-slate-950/80 border border-slate-800 focus:border-indigo-500 text-slate-100 text-sm rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-550/30 font-bold font-mono"
+                className="w-full bg-slate-950/80 border border-indigo-500/40 focus:border-indigo-500 text-indigo-300 text-sm rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-550/30 font-bold font-mono"
               />
-              <span className="absolute right-3.5 top-2.5 text-xs text-slate-550 font-bold">%</span>
+              <span className="absolute right-3.5 top-2.5 text-xs text-indigo-400 font-bold">%</span>
             </div>
           </div>
         </div>
 
-        <div className="mt-4 pt-3 border-t border-slate-800/40 flex justify-end">
+        <div className="mt-4 pt-3 border-t border-slate-800/40 flex items-center justify-between gap-4">
+          <p className="text-[10px] text-slate-500 font-medium font-sans">
+            * Stawkę godzinową oraz podatek zmienisz od teraz w zakładce <strong className="text-slate-400">Settings ⚙️</strong> na górnym pasku.
+          </p>
           <button
             onClick={handleSaveSettings}
             type="button"
-            className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-500 hover:to-blue-400 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-indigo-500/10 transition-all transform active:translate-y-0.5"
+            className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-500 hover:to-blue-400 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-indigo-500/10 transition-all transform active:translate-y-0.5 whitespace-nowrap"
           >
-            ✓ Zapisz parametry kalkulacji
+            ✓ Zapisz premię
           </button>
         </div>
       </div>
