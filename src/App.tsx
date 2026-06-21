@@ -10,6 +10,7 @@ import ProposalsView from './components/ProposalsView';
 import MarketView from './components/MarketView';
 import ControlView from './components/ControlView';
 import AdminView from './components/AdminView';
+import FormatkaView from './components/FormatkaView';
 
 interface Toast {
   id: number;
@@ -443,6 +444,16 @@ export default function App() {
                   </span>
                 )}
               </button>
+
+              <button 
+                onClick={() => { setActiveTab('formatka'); setMobileMenuOpen(false); }} 
+                className={`px-3 py-2 rounded-lg text-left ${
+                  activeTab === 'formatka' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'
+                }`}
+              >
+                📋 Moje życzenia (Formatka)
+              </button>
+              
               
               {role === 'admin' && (
                 <>
@@ -513,6 +524,16 @@ export default function App() {
                 {activeMarketCount}
               </span>
             )}
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('formatka')}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
+              activeTab === 'formatka' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
+            }`}
+          >
+            {activeTab === 'formatka' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+            <span className="relative z-10">Formatka życzeń</span>
           </button>
 
           {/* Separator */}
@@ -1091,6 +1112,10 @@ export default function App() {
 
         {activeTab === 'market' && (
           <MarketView addToast={addToast} onRefresh={loadMarketCount} />
+        )}
+
+        {activeTab === 'formatka' && (
+          <FormatkaView addToast={addToast} />
         )}
 
         {role === 'admin' && activeTab === 'control' && (
