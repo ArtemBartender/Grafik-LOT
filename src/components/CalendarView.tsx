@@ -619,7 +619,7 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
                           </button>
                         </>
                       ) : (
-                        <p className="text-slate-500 text-[11px] italic">To jest twoja zarejestrowana zmiana.</p>
+                        <p className="text-slate-500 text-[11px] italic">To jest Twoja zarejestrowana zmiana.</p>
                       )}
                     </div>
                   </div>
