@@ -11,6 +11,7 @@ import MarketView from './components/MarketView';
 import ControlView from './components/ControlView';
 import AdminView from './components/AdminView';
 import FormatkaView from './components/FormatkaView';
+import SettingsView from './components/SettingsView';
 
 interface Toast {
   id: number;
@@ -100,6 +101,64 @@ export default function App() {
   const [activeProposalsCount, setActiveProposalsCount] = useState<number>(0);
   const [activeMarketCount, setActiveMarketCount] = useState<number>(0);
 
+  // States for in-app and browser notifications
+  const [notificationsList, setNotificationsList] = useState<any[]>([]);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(0);
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+  const [displayedNotificationIds] = useState<Set<number>>(new Set());
+
+  // Requests browser push notification permissions
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  const loadNotifications = async () => {
+    try {
+      const data = await apiCall('/api/notifications');
+      if (Array.isArray(data)) {
+        setNotificationsList(data);
+        const unread = data.filter((n: any) => !n.isRead).length;
+        setUnreadNotificationsCount(unread);
+
+        // Scan for new, unread notifications to alert user in real-time
+        data.forEach((n: any) => {
+          if (!n.isRead && !displayedNotificationIds.has(n.id)) {
+            displayedNotificationIds.add(n.id);
+
+            // Trigger beautiful top toast
+            addToast(`🔔 ${n.title}: ${n.message}`, 'info');
+
+            // Dispatch system desktop notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+              try {
+                new window.Notification(n.title, {
+                  body: n.message,
+                });
+              } catch (err) {
+                console.warn('Native notification failed:', err);
+              }
+            }
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Error fetching notifications:', e);
+    }
+  };
+
+  const handleClearAllNotifications = async () => {
+    try {
+      await apiCall('/api/notifications/read-all', { method: 'POST' });
+      setUnreadNotificationsCount(0);
+      setNotificationsList(prev => prev.map(n => ({ ...n, isRead: true })));
+      addToast('Oznaczono wszystkie powiadomienia jako przeczytane', 'success');
+    } catch (e: any) {
+      addToast(e.message || 'Błąd czyszczenia powiadomień', 'error');
+    }
+  };
+
   const loadProposalsCount = async () => {
     if (!token) return;
     try {
@@ -137,6 +196,7 @@ export default function App() {
   const loadAllCounts = () => {
     loadProposalsCount();
     loadMarketCount();
+    loadNotifications();
   };
 
   useEffect(() => {
@@ -383,12 +443,52 @@ export default function App() {
               </div>
             </div>
 
-            <button 
-              onClick={() => setShowPassModal(true)}
-              className="px-3 py-1.5 bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 text-xs font-semibold rounded-lg transition"
-            >
-              Hasło 🔑
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+                className="relative p-2 bg-slate-800/60 hover:bg-slate-705/60 border border-slate-700/50 text-slate-300 rounded-lg transition"
+                title="Powiadomienia"
+              >
+                🔔
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 text-[9px] font-black rounded-full bg-red-650 bg-red-600 text-white animate-pulse">
+                    {unreadNotificationsCount}
+                  </span>
+                )}
+              </button>
+              
+              {showNotificationsDropdown && (
+                <div className="absolute right-0 mt-2.5 w-80 bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-2xl z-50 text-slate-100 space-y-3 animate-fade-in text-left">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <h4 className="text-xs font-black uppercase text-gold-gradient tracking-wide">Powiadomienia</h4>
+                    {unreadNotificationsCount > 0 && (
+                      <button 
+                        onClick={handleClearAllNotifications}
+                        className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold"
+                      >
+                        Oznacz wszystkie ✓
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="max-h-60 overflow-y-auto space-y-2.5 pr-1 divide-y divide-slate-850/45">
+                    {notificationsList.length === 0 ? (
+                      <p className="text-[10px] text-slate-500 text-center py-4 italic">Brak nowych powiadomień</p>
+                    ) : (
+                      notificationsList.map((notif) => (
+                        <div key={notif.id} className={`pt-2.5 first:pt-0 ${notif.isRead ? 'opacity-50' : 'opacity-100 font-bold'}`}>
+                          <div className="flex justify-between gap-2 text-xs font-semibold">
+                            <span className="text-slate-200">{notif.title}</span>
+                            <span className="text-[8px] text-slate-500 shrink-0 font-mono">{new Date(notif.createdAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-medium leading-normal mt-0.5">{notif.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <button 
               onClick={handleLogout}
@@ -444,7 +544,6 @@ export default function App() {
                   </span>
                 )}
               </button>
-
               <button 
                 onClick={() => { setActiveTab('formatka'); setMobileMenuOpen(false); }} 
                 className={`px-3 py-2 rounded-lg text-left ${
@@ -453,7 +552,15 @@ export default function App() {
               >
                 📋 Moje życzenia (Formatka)
               </button>
-              
+
+              <button 
+                onClick={() => { setActiveTab('settings'); setMobileMenuOpen(false); }} 
+                className={`px-3 py-2 rounded-lg text-left ${
+                  activeTab === 'settings' ? 'bg-gold-gradient/10 text-[var(--color-gold-light)] border border-[var(--color-gold)]/30 shadow-[inset_0_0_10px_rgba(212,175,55,0.15)] bg-slate-900/50' : 'text-slate-400'
+                }`}
+              >
+                ⚙️ Ustawienia i Profil
+              </button>
               
               {role === 'admin' && (
                 <>
@@ -461,9 +568,8 @@ export default function App() {
                 </>
               )}
             </div>
-            <div className="pt-2 border-t border-[var(--color-gold)]/10 flex items-center justify-between gap-2">
-              <button onClick={() => setShowPassModal(true)} className="px-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-xs text-slate-300">Zmień Hasło</button>
-              <button onClick={handleLogout} className="px-4 py-2 border border-red-500/40 text-red-400 rounded-lg text-xs">Wyloguj</button>
+            <div className="pt-2 border-t border-[var(--color-gold)]/10 flex items-center justify-end gap-2">
+              <button onClick={handleLogout} className="px-4 py-2 border border-red-500/40 text-red-400 rounded-lg text-xs font-bold w-full text-center">Wyloguj</button>
             </div>
           </div>
         )}
@@ -534,6 +640,16 @@ export default function App() {
           >
             {activeTab === 'formatka' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
             <span className="relative z-10">Formatka życzeń</span>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold uppercase rounded-t-lg tracking-wider transition-all relative overflow-hidden ${
+              activeTab === 'settings' ? 'text-[var(--color-gold-light)] bg-slate-900/60 shadow-[inset_0_1px_0_rgba(212,175,55,0.3)] pb-3 before:absolute before:bottom-0 before:left-0 before:right-0 before:h-[3px] before:bg-gold-gradient before:shadow-[0_0_12px_rgba(212,175,55,0.8)]' : 'text-slate-400 hover:text-slate-200 pb-2 hover:bg-slate-900/30'
+            }`}
+          >
+            {activeTab === 'settings' && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--color-gold)]/10 to-transparent w-[200%] animate-[goldShine_3s_linear_infinite]" />}
+            <span className="relative z-10">Ustawienia ⚙️</span>
           </button>
 
           {/* Separator */}
@@ -1116,6 +1232,10 @@ export default function App() {
 
         {activeTab === 'formatka' && (
           <FormatkaView addToast={addToast} role={role} userId={claims?.user_id || null} />
+        )}
+
+        {activeTab === 'settings' && (
+          <SettingsView addToast={addToast} />
         )}
 
         {role === 'admin' && activeTab === 'control' && (
