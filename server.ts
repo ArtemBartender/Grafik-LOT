@@ -1569,11 +1569,11 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(`Życzenia - ${month}`);
 
-    // Helper to determine if a day is a weekend (Saturday or Sunday)
+    // Helper to determine if a day is a weekend (Friday, Saturday or Sunday)
     const isWeekendDay = (d: number) => {
       const date = new Date(year, monthNum - 1, d);
       const dayOfWeek = date.getDay();
-      return dayOfWeek === 0 || dayOfWeek === 6;
+      return dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6; // Friday, Saturday, Sunday
     };
 
     // Style helper for borders
@@ -1582,6 +1582,45 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
       bottom: { style: 'thin' as const, color: { argb: 'FFBFBFBF' } },
       left: { style: 'thin' as const, color: { argb: 'FFBFBFBF' } },
       right: { style: 'thin' as const, color: { argb: 'FFBFBFBF' } }
+    };
+
+    // User Classification Helper
+    const getUserCategory = (u: any) => {
+      const nameNorm = (u.fullName || '').trim().toLowerCase();
+      
+      // 1. Zmywak / Dishwasher
+      const isZmywak = checkIsZmiwakByName(u.fullName) || 
+                       nameNorm.includes('zmyw') || 
+                       nameNorm.includes('zmywak') || 
+                       nameNorm.includes('zmywaki') ||
+                       actualShifts.some(s => s.userId === u.id && s.isZmiwaka);
+      if (isZmywak) return 'zmywak';
+
+      // 2. Coordinator
+      const isCoordinator = u.role === 'coordinator' || 
+                            u.role === 'admin' ||
+                            actualShifts.some(s => s.userId === u.id && s.isCoordinator);
+      if (isCoordinator) return 'coordinator';
+
+      // 3. Barman
+      const hasBarShift = actualShifts.some(s => s.userId === u.id && s.isBarToday);
+      const uPref = allPrefs.find(p => p.userId === u.id);
+      const prefObj = uPref ? (uPref.preferences as Record<string, string>) || {} : {};
+      const hasBarPref = Object.values(prefObj).some(val => val.includes('/B') || val.includes('B'));
+      
+      if (hasBarShift || hasBarPref) {
+        return 'barman';
+      }
+
+      // 4. Regular staff
+      return 'regular';
+    };
+
+    const categoryPriority: Record<string, number> = {
+      'coordinator': 1,
+      'barman': 2,
+      'regular': 3,
+      'zmywak': 4
     };
 
     // Row 1: Header (Nazwisko i imię, days)
@@ -1593,7 +1632,7 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
     row1Values.push('Dni pracy'); // heading for the SUM column at the end: "Количество рабочих дней"
 
     const row1 = worksheet.addRow(row1Values);
-    row1.height = 30;
+    row1.height = 55; // Taller row for vertically written dates
     row1.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
     row1.getCell(1).font = { name: 'Arial', size: 10, bold: true };
     row1.getCell(1).fill = {
@@ -1605,7 +1644,11 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
 
     for (let d = 1; d <= daysInMonth; d++) {
       const cell = row1.getCell(d + 1);
-      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.alignment = { 
+        vertical: 'middle', 
+        horizontal: 'center',
+        textRotation: 90 // Written vertically!
+      };
       cell.font = { name: 'Arial', size: 9, bold: true };
       cell.border = thinBorder;
       if (isWeekendDay(d)) {
@@ -1637,7 +1680,7 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
     const addPlanRow = () => {
       const planValues = ['PLAN'];
       for (let d = 1; d <= daysInMonth; d++) {
-        planValues.push(isWeekendDay(d) ? '9' : '10');
+        planValues.push('10');
       }
       planValues.push('');
       const r = worksheet.addRow(planValues);
@@ -1676,9 +1719,14 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
           const dateStr = `${year}-${formattedM}-${formattedD}`;
           
           const actualCount = actualShifts.filter(s => s.shiftDate === dateStr).length;
-          const limit = isWeekendDay(d) ? 9 : 10;
+          const limit = 10; // PLAN limit is 10 on all days
           const brakiVal = actualCount - limit;
-          brakiValues.push(brakiVal.toString());
+          
+          if (brakiVal === 0) {
+            brakiValues.push('');
+          } else {
+            brakiValues.push(brakiVal.toString());
+          }
         }
       }
       brakiValues.push('');
@@ -1706,14 +1754,14 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
           cell.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFFF0000' } // Deep red background
+            fgColor: { argb: 'FFC00000' } // Dark red background for negative shortage
           };
         } else {
           cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF000000' } };
           cell.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFFCE4D6' } // Soft orange-red/pink background
+            fgColor: { argb: 'FFFF0000' } // Bright red background for positive shortage / other
           };
         }
       }
@@ -1727,8 +1775,15 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
     // Row 3: BRAKI
     addBrakiRow();
 
-    // User rows
-    const sortedUsers = [...allUsers].sort((a, b) => a.fullName.localeCompare(b.fullName));
+    // User rows - Sorted by role priority, then alphabetically by fullName
+    const sortedUsers = [...allUsers].sort((a, b) => {
+      const catA = getUserCategory(a);
+      const catB = getUserCategory(b);
+      if (catA !== catB) {
+        return categoryPriority[catA] - categoryPriority[catB];
+      }
+      return a.fullName.localeCompare(b.fullName);
+    });
 
     sortedUsers.forEach(u => {
       const uPref = allPrefs.find(p => p.userId === u.id);
@@ -1763,7 +1818,18 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
       nameCell.font = { name: 'Arial', size: 10, bold: true };
       nameCell.alignment = { vertical: 'middle', horizontal: 'left' };
       nameCell.border = thinBorder;
-      nameCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+      
+      // Fill colors for user names by their category (coordinator, barman, regular, zmywak)
+      const userCategory = getUserCategory(u);
+      let nameBgColor = 'FFFFFFFF'; // default white
+      if (userCategory === 'coordinator') {
+        nameBgColor = 'FFFCE4D6'; // Soft peach
+      } else if (userCategory === 'barman') {
+        nameBgColor = 'FFDDEBF7'; // Soft blue
+      } else if (userCategory === 'zmywak') {
+        nameBgColor = 'FFD9D9D9'; // Light gray
+      }
+      nameCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: nameBgColor } };
 
       for (let d = 1; d <= daysInMonth; d++) {
         const cell = userRow.getCell(d + 1);
@@ -1771,27 +1837,20 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
         cell.border = thinBorder;
         const val = cell.value?.toString() || '';
 
-        if (val === '1') {
+        if (val === '1' || val === '2') {
           cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF000000' } };
           cell.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFFFFFFF' } // Simply black on standard white background (colors are added after layout)
-          };
-        } else if (val === '2') {
-          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF000000' } };
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFFFFFFF' } // Simply black on standard white background (colors are added after layout)
+            fgColor: { argb: 'FFFFFFFF' } // "1" and "2" are strictly black on normal white background
           };
         } else if (val === 'X') {
-          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFF0000' } };
+          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFF0000' } }; // 'X' is red text
           if (isWeekendDay(d)) {
             cell.fill = {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: 'FFC6E0B4' } // Weekend soft green
+              fgColor: { argb: 'FFC6E0B4' } // Weekend soft olive green
             };
           } else {
             cell.fill = {
@@ -1805,7 +1864,7 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
             cell.fill = {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: 'FFC6E0B4' } // Weekend soft green
+              fgColor: { argb: 'FFC6E0B4' } // Weekend soft olive green
             };
           } else {
             cell.fill = {
@@ -1833,7 +1892,7 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
     for (let d = 1; d <= daysInMonth; d++) {
       worksheet.getColumn(d + 1).width = 4.2;
     }
-    worksheet.getColumn(lastColIndex).width = 6.5;
+    worksheet.getColumn(lastColIndex).width = 11; // Width for "Dni pracy" column at the end
 
     // Write back response
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
