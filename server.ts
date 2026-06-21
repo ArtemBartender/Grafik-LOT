@@ -5,6 +5,9 @@ import { createServer as createViteServer } from 'vite';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 import fs from 'fs';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import { rateLimit } from 'express-rate-limit';
 
 import { db } from './src/db/index.ts';
 import { 
@@ -13,16 +16,36 @@ import {
   formatkaPreferences, formatkaLocks
 } from './src/db/schema.ts';
 import { eq, and, or, like, desc, asc, sql } from 'drizzle-orm';
-import { authGuard, AuthRequest } from './src/lib/auth-middleware.ts';
+import { authGuard, requireRole, AuthRequest } from './src/lib/auth-middleware.ts';
 
 const app = express();
 app.use(express.json());
 
 const PORT = Number(process.env.PORT) || 3000;
 
-// Helper password hasher: SHA256 (Simple and native)
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-temp-key-for-development';
+
+// express-rate-limit configuration for /api/login and related auth endpoints
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // limit each IP to 30 requests per windowMs
+  message: { error: 'Zbyt wiele prób logowania. Spróbuj ponownie za 15 minut.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Helper password hasher: Bcrypt (Secure)
 function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password).digest('hex');
+  return bcrypt.hashSync(password, 10);
+}
+
+// Helper to verify passwords supporting both legacy SHA-256 and modern bcrypt hashes
+function verifyPassword(password: string, hash: string): boolean {
+  if (hash.startsWith('$2a$') || hash.startsWith('$2b$')) {
+    return bcrypt.compareSync(password, hash);
+  }
+  const legacyHash = crypto.createHash('sha256').update(password).digest('hex');
+  return legacyHash === hash;
 }
 
 // Default Data Seed
@@ -268,7 +291,7 @@ async function findUserByEmailAndName(email: string, fullName?: string) {
 }
 
 // Authentication: Login
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -280,20 +303,18 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: 'Nieprawidłowy email lub hasło' });
     }
 
-    if (user.passwordHash !== hashPassword(password)) {
+    if (!verifyPassword(password, user.passwordHash)) {
       return res.status(401).json({ error: 'Nieprawidłowy email lub hasło' });
     }
 
-    // Create custom simplified token
+    // Create a real signed JWT
     const tokenPayload = {
       user_id: user.id,
-      sub: String(user.id),
       email: user.email,
       full_name: user.fullName,
-      role: user.role,
-      exp: Date.now() + 24 * 60 * 60 * 1000 // 1 day
+      role: user.role
     };
-    const access_token = Buffer.from(JSON.stringify(tokenPayload)).toString('base64');
+    const access_token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '1d' });
     res.json({ access_token, user: { id: user.id, full_name: user.fullName, role: user.role } });
   } catch (err: any) {
     res.status(500).json({ error: 'Błąd logowania: ' + err.message });
@@ -351,7 +372,7 @@ app.post('/api/password/change-before-login', async (req, res) => {
       return res.status(404).json({ error: 'Nieprawidłowy adres email' });
     }
 
-    if (user.passwordHash !== hashPassword(stare_haslo)) {
+    if (!verifyPassword(stare_haslo, user.passwordHash)) {
       return res.status(400).json({ error: 'Błędne dotychczasowe hasło' });
     }
 
@@ -371,7 +392,7 @@ app.post('/api/password/change', authGuard, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Proszę podać stare i nowe hasło' });
     }
 
-    if (user.passwordHash !== hashPassword(stare_haslo)) {
+    if (!verifyPassword(stare_haslo, user.passwordHash)) {
       return res.status(400).json({ error: 'Błędne stare hasło' });
     }
 
@@ -1949,7 +1970,7 @@ app.post('/api/coord-panel/report', authGuard, async (req: AuthRequest, res) => 
 
 
 // Control view - Summary of events and attendance metrics
-app.get('/api/control/summary', authGuard, async (req: AuthRequest, res) => {
+app.get('/api/control/summary', authGuard, requireRole('admin', 'coordinator'), async (req: AuthRequest, res) => {
   try {
     const { month } = req.query; // YYYY-MM
     if (!month) {
@@ -2007,7 +2028,7 @@ app.get('/api/control/summary', authGuard, async (req: AuthRequest, res) => {
 });
 
 // Control extra log details for deleted items
-app.get('/api/control/deleted', authGuard, async (req: AuthRequest, res) => {
+app.get('/api/control/deleted', authGuard, requireRole('admin', 'coordinator'), async (req: AuthRequest, res) => {
   try {
     const deleted = await db.select().from(deletedEvents);
     res.json(deleted);
@@ -2016,7 +2037,7 @@ app.get('/api/control/deleted', authGuard, async (req: AuthRequest, res) => {
   }
 });
 
-app.get('/api/control/deleted/:event_id', authGuard, async (req: AuthRequest, res) => {
+app.get('/api/control/deleted/:event_id', authGuard, requireRole('admin', 'coordinator'), async (req: AuthRequest, res) => {
   try {
     const eventId = Number(req.params.event_id);
     const results = await db.select().from(deletedEvents).where(eq(deletedEvents.eventId, eventId));
@@ -2045,7 +2066,7 @@ app.get('/api/control/deleted/:event_id', authGuard, async (req: AuthRequest, re
 });
 
 // Log event: Lateness (lateness)
-app.post('/api/control/late', authGuard, async (req: AuthRequest, res) => {
+app.post('/api/control/late', authGuard, requireRole('admin', 'coordinator'), async (req: AuthRequest, res) => {
   try {
     const { user_id, date, reason, delay_minutes, time_from, time_to } = req.body;
     if (!user_id || !date || !delay_minutes) {
@@ -2070,7 +2091,7 @@ app.post('/api/control/late', authGuard, async (req: AuthRequest, res) => {
 });
 
 // Log event: Extra Hours
-app.post('/api/control/extra', authGuard, async (req: AuthRequest, res) => {
+app.post('/api/control/extra', authGuard, requireRole('admin', 'coordinator'), async (req: AuthRequest, res) => {
   try {
     const { user_id, date, reason, hours } = req.body;
     if (!user_id || !date || !hours) {
@@ -2093,7 +2114,7 @@ app.post('/api/control/extra', authGuard, async (req: AuthRequest, res) => {
 });
 
 // Log event: Absence (absence)
-app.post('/api/control/absence', authGuard, async (req: AuthRequest, res) => {
+app.post('/api/control/absence', authGuard, requireRole('admin', 'coordinator'), async (req: AuthRequest, res) => {
   try {
     const { user_id, date, reason } = req.body;
     if (!user_id || !date) {
@@ -2115,7 +2136,7 @@ app.post('/api/control/absence', authGuard, async (req: AuthRequest, res) => {
 });
 
 // Log event: Custom Manual Shift Adds
-app.post('/api/control/add-shift', authGuard, async (req: AuthRequest, res) => {
+app.post('/api/control/add-shift', authGuard, requireRole('admin', 'coordinator'), async (req: AuthRequest, res) => {
   try {
     const { user_id, date, reason, from, to } = req.body;
     if (!user_id || !date || !from || !to) {
@@ -2156,7 +2177,7 @@ app.post('/api/control/add-shift', authGuard, async (req: AuthRequest, res) => {
 });
 
 // Delete controlled log with audit note
-app.post('/api/control/delete', authGuard, async (req: AuthRequest, res) => {
+app.post('/api/control/delete', authGuard, requireRole('admin', 'coordinator'), async (req: AuthRequest, res) => {
   try {
     const { id, reason } = req.body;
     const user = req.user;
@@ -2197,7 +2218,7 @@ app.post('/api/control/delete', authGuard, async (req: AuthRequest, res) => {
 
 
 // Parser imports: Paste raw schedule text list
-app.post('/api/upload-text', authGuard, async (req: AuthRequest, res) => {
+app.post('/api/upload-text', authGuard, requireRole('admin', 'coordinator'), async (req: AuthRequest, res) => {
   try {
     const { text, month, year } = req.body;
     if (!text || !month || !year) {
@@ -2593,7 +2614,7 @@ function isShiftMorningOrEvening(code: string): { isMorning: boolean; isEvening:
 }
 
 // Parser imports: Handle complex Excel sheets parsing directly using exceljs
-app.post('/api/upload-xlsx', authGuard, express.raw({ type: '*/*', limit: '20mb' }), async (req, res) => {
+app.post('/api/upload-xlsx', authGuard, requireRole('admin', 'coordinator'), express.raw({ type: '*/*', limit: '20mb' }), async (req: AuthRequest, res) => {
   const monthHeader = req.headers['x-month'] || req.query.month;
   const yearHeader = req.headers['x-year'] || req.query.year;
 
