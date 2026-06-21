@@ -428,7 +428,7 @@ export default function App() {
                 LOT BUSINESS LOUNGE
               </h1>
               <p className="text-[9px] text-[var(--color-gold-light)] font-bold uppercase tracking-[0.3em] leading-none mt-0.5 opacity-80">
-                Warszawa Scheduler
+                Warszawa
               </p>
             </div>
           </div>
