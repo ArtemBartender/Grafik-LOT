@@ -1744,10 +1744,12 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
         const val = cell.value?.toString() || '';
         
         if (val === '') {
+          // If empty, keep standard stripe formatting (green on weekends, white on weekdays)
+          const bgColor = isWeekendDay(d) ? 'FFC6E0B4' : 'FFFFFFFF';
           cell.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFFFFFFF' } // White background for unfilled
+            fgColor: { argb: bgColor }
           };
         } else if (val.startsWith('-')) {
           cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -1757,7 +1759,7 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
             fgColor: { argb: 'FFC00000' } // Dark red background for negative shortage
           };
         } else {
-          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF000000' } };
+          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } }; // White bold text for positive shortage too
           cell.fill = {
             type: 'pattern',
             pattern: 'solid',
@@ -1837,42 +1839,19 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
         cell.border = thinBorder;
         const val = cell.value?.toString() || '';
 
-        if (val === '1' || val === '2') {
-          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF000000' } };
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFFFFFFF' } // "1" and "2" are strictly black on normal white background
-          };
-        } else if (val === 'X') {
-          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFF0000' } }; // 'X' is red text
-          if (isWeekendDay(d)) {
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFC6E0B4' } // Weekend soft olive green
-            };
-          } else {
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFFFFFFF' }
-            };
-          }
+        // Background color is strictly determined by weekend vs weekday to form perfect stripes
+        const bgColor = isWeekendDay(d) ? 'FFC6E0B4' : 'FFFFFFFF';
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: bgColor }
+        };
+
+        // Text style: red for X, black for others
+        if (val.includes('X')) {
+          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFF0000' } };
         } else {
-          if (isWeekendDay(d)) {
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFC6E0B4' } // Weekend soft olive green
-            };
-          } else {
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFFFFFFF' }
-            };
-          }
+          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF000000' } };
         }
       }
 
