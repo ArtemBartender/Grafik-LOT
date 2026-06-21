@@ -89,6 +89,20 @@ export const deletedEvents = pgTable('deleted_events', {
   hours: doublePrecision('hours'),
 });
 
+export const formatkaPreferences = pgTable('formatka_preferences', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  month: text('month').notNull(), // "YYYY-MM"
+  preferences: jsonb('preferences').notNull().default({}), // e.g. { "1": "W", "2": "I", "3": "II" }
+  updatedAt: text('updated_at').notNull(),
+});
+
+export const formatkaLocks = pgTable('formatka_locks', {
+  id: serial('id').primaryKey(),
+  month: text('month').unique().notNull(), // "YYYY-MM"
+  isLocked: boolean('is_locked').notNull().default(false),
+});
+
 export const coordinatorReports = pgTable('coordinator_reports', {
   id: text('id').primaryKey(), // lounge_shift-type_date
   lounge: text('lounge').notNull(), // 'mazurek' | 'polonez'
@@ -108,6 +122,14 @@ export const usersRelations = relations(users, ({ many }) => ({
   marketOffers: many(marketOffers, { relationName: 'owner' }),
   candidateOffers: many(marketOffers, { relationName: 'candidate' }),
   controlEvents: many(controlEvents),
+  formatkaPreferences: many(formatkaPreferences),
+}));
+
+export const formatkaPreferencesRelations = relations(formatkaPreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [formatkaPreferences.userId],
+    references: [users.id],
+  }),
 }));
 
 export const shiftsRelations = relations(shifts, ({ one }) => ({
