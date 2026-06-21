@@ -1569,11 +1569,11 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(`Życzenia - ${month}`);
 
-    // Helper to determine if a day is a weekend (Friday, Saturday or Sunday)
+    // Helper to determine if a day is a weekend (Saturday or Sunday)
     const isWeekendDay = (d: number) => {
       const date = new Date(year, monthNum - 1, d);
       const dayOfWeek = date.getDay();
-      return dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6; // Friday, Saturday, Sunday
+      return dayOfWeek === 0 || dayOfWeek === 6; // Saturday, Sunday only
     };
 
     // Style helper for borders
@@ -1599,16 +1599,18 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
       // 2. Coordinator
       const isCoordinator = u.role === 'coordinator' || 
                             u.role === 'admin' ||
+                            checkIsCoordinatorByName(u.fullName) ||
                             actualShifts.some(s => s.userId === u.id && s.isCoordinator);
       if (isCoordinator) return 'coordinator';
 
       // 3. Barman
-      const hasBarShift = actualShifts.some(s => s.userId === u.id && s.isBarToday);
+      const isBarman = checkIsBarmanByName(u.fullName) ||
+                       actualShifts.some(s => s.userId === u.id && s.isBarToday);
       const uPref = allPrefs.find(p => p.userId === u.id);
       const prefObj = uPref ? (uPref.preferences as Record<string, string>) || {} : {};
       const hasBarPref = Object.values(prefObj).some(val => val.includes('/B') || val.includes('B'));
       
-      if (hasBarShift || hasBarPref) {
+      if (isBarman || hasBarPref) {
         return 'barman';
       }
 
@@ -1744,12 +1746,11 @@ app.get('/api/formatka/export', authGuard, async (req: AuthRequest, res) => {
         const val = cell.value?.toString() || '';
         
         if (val === '') {
-          // If empty, keep standard stripe formatting (green on weekends, white on weekdays)
-          const bgColor = isWeekendDay(d) ? 'FFC6E0B4' : 'FFFFFFFF';
+          // If empty (no shortage), fill with bright red to complete the "red line"
           cell.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: bgColor }
+            fgColor: { argb: 'FFFF0000' } // Bright red
           };
         } else if (val.startsWith('-')) {
           cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -2399,6 +2400,23 @@ function checkIsZmiwakByName(name: string): boolean {
     return true;
   }
   return false;
+}
+
+function checkIsCoordinatorByName(name: string): boolean {
+  const norm = String(name || '').trim().toLowerCase();
+  const coordSubstrings = [
+    'daniel', 'romanova', 'wozniak', 'kupczyk', 'włodarczyk', 'wlodarczyk',
+    'palczewska', 'świstak', 'swistak', 'utko', 'bilenko', 'koordynator', 'admin'
+  ];
+  return coordSubstrings.some(sub => norm.includes(sub));
+}
+
+function checkIsBarmanByName(name: string): boolean {
+  const norm = String(name || '').trim().toLowerCase();
+  const barmanSubstrings = [
+    'ciepłucha', 'cieplucha', 'krzymieniewski'
+  ];
+  return barmanSubstrings.some(sub => norm.includes(sub));
 }
 
 function getCellValueString(cell: ExcelJS.Cell): string {
