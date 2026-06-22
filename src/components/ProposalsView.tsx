@@ -122,7 +122,7 @@ export default function ProposalsView({ addToast, onRefresh }: ProposalsViewProp
               📬 Skrzynka propozycji wymian
             </h1>
             <p className="text-xs text-slate-500 mt-1 font-semibold">
-              Najpierw zamianę akceptuje odbiorca, następnie Robert lub Michał zatwierdzają zmianę w systemie.
+              Najpierw zamianę akceptuje odbiorca, następnie Koordynator lub Administrator zatwierdza zmianę w systemie.
             </p>
           </div>
           <button 
