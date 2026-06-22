@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { apiCall, currentClaims } from '../lib/api';
 
 interface CalendarViewProps {
@@ -595,16 +596,18 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
                       {/* Check if person works on date */}
                       {myClaims && selectedPerson.user_id !== myClaims.user_id ? (
                         <>
-                          <button 
-                            onClick={() => {
-                              setSwapTargetPerson(selectedPerson);
-                              setSwapTargetDateIso(iso);
-                              setShowSwapModal(true);
-                            }}
-                            className="px-4 py-2 bg-slate-905 border border-slate-700 hover:border-slate-500 hover:bg-slate-800 text-slate-200 text-xs font-bold rounded-lg transition"
-                          >
-                            Zaproponuj wymianę
-                          </button>
+                          {!isPast && (
+                            <button 
+                              onClick={() => {
+                                setSwapTargetPerson(selectedPerson);
+                                setSwapTargetDateIso(iso);
+                                setShowSwapModal(true);
+                              }}
+                              className="px-4 py-2 bg-slate-905 border border-slate-700 hover:border-slate-500 hover:bg-slate-800 text-slate-200 text-xs font-bold rounded-lg transition"
+                            >
+                              Zaproponuj wymianę
+                            </button>
+                          )}
                           
                           <button 
                             disabled={!isDirectTakeoverAllowed(iso)}
@@ -637,16 +640,16 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
       </section>
 
       {/* SWAP RECIPIENT CHOICE MODAL */}
-      {showSwapModal && swapTargetPerson && swapTargetDateIso && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
+      {showSwapModal && swapTargetPerson && swapTargetDateIso && createPortal(
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-100 animate-fade-in">
+          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl relative">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-800">
               <h3 className="text-base font-extrabold text-slate-200">
                 🧩 Wybierz swoją zmianę do wymiany
               </h3>
               <button 
                 onClick={() => setShowSwapModal(false)}
-                className="text-slate-400 hover:text-slate-100 text-2xl"
+                className="text-slate-400 hover:text-slate-100 text-2xl cursor-pointer"
               >
                 &times;
               </button>
@@ -712,7 +715,8 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
