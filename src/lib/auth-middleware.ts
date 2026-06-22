@@ -4,7 +4,10 @@ import { db } from '../db/index.ts';
 import { users } from '../db/schema.ts';
 import { eq } from 'drizzle-orm';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-temp-key-for-development';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET is required');
+}
 
 export interface AuthRequest extends Request {
   user?: any; // The database user object
@@ -59,17 +62,43 @@ function generateCompanyEmail(fullName: string): string {
   }
 }
 
+function getCookie(cookieHeader: string | undefined, name: string): string | null {
+  if (!cookieHeader) return null;
+  const cookies = cookieHeader.split(';');
+  for (let c of cookies) {
+    const [key, val] = c.trim().split('=');
+    if (key === name) {
+      return decodeURIComponent(val || '');
+    }
+  }
+  return null;
+}
+
 export const authGuard = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  let token: string | null = null;
+
+  // Prefer HttpOnly secure cookie
+  token = getCookie(req.headers.cookie, 'access_token');
+
+  // Fallback to Header ONLY if it's a valid 3-part signed JWT (to stay backward compatible)
+  if (!token) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const possibleToken = authHeader.split('Bearer ')[1];
+      if (possibleToken && possibleToken.split('.').length === 3) {
+        token = possibleToken;
+      }
+    }
+  }
+
+  if (!token) {
     return res.status(401).json({ error: 'Auth token expired or invalid (missing)' });
   }
 
-  const token = authHeader.split('Bearer ')[1];
   try {
     let decodedToken: any = null;
 
