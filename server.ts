@@ -447,15 +447,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000
     });
 
-    const claimsPayload = {
-      user_id: user.id,
-      email: user.email,
-      full_name: user.fullName,
-      role: user.role
-    };
-    const claims_token = Buffer.from(JSON.stringify(claimsPayload)).toString('base64');
-
-    res.json({ access_token: claims_token, user: { id: user.id, full_name: user.fullName, role: user.role } });
+    res.json({ access_token, user: { id: user.id, full_name: user.fullName, role: user.role } });
   } catch (err: any) {
     res.status(500).json({ error: 'Błąd logowania: ' + err.message });
   }
