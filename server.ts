@@ -23,7 +23,10 @@ app.use(express.json());
 
 const PORT = Number(process.env.PORT) || 3000;
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-temp-key-for-development';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET is required');
+}
 
 // express-rate-limit configuration for /api/login and related auth endpoints
 const loginLimiter = rateLimit({
@@ -47,6 +50,13 @@ function verifyPassword(password: string, hash: string): boolean {
   }
   const legacyHash = crypto.createHash('sha256').update(password).digest('hex');
   return legacyHash === hash;
+}
+
+function validatePassword(password: string) {
+  return typeof password === 'string' &&
+    password.length >= 8 &&
+    /[a-zA-Z]/.test(password) &&
+    /\d/.test(password);
 }
 
 // Helper to queue an in-app notification in database based on user notification toggles
@@ -274,8 +284,78 @@ async function seedDBIfEmpty() {
   }
 }
 
-// Run Seeder
-seedDBIfEmpty();
+async function ensureAdminFromEnv() {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  const adminName = process.env.ADMIN_FULL_NAME || 'System Admin';
+
+  if (!adminEmail || !adminPassword) {
+    console.log('[Init] ADMIN_EMAIL or ADMIN_PASSWORD not set in environment variables.');
+    return;
+  }
+
+  try {
+    const cleanEmail = adminEmail.toLowerCase().trim();
+    const existing = await db.select().from(users).where(eq(users.email, cleanEmail)).limit(1);
+    if (existing.length === 0) {
+      console.log(`[Init] Creating initial admin user from environment: ${cleanEmail}`);
+      await db.insert(users).values({
+        email: cleanEmail,
+        passwordHash: hashPassword(adminPassword),
+        fullName: adminName,
+        role: 'admin',
+        hourlyRatePln: 35.00,
+        taxPercent: 12.0
+      });
+      console.log('[Init] Environment-defined admin user created!');
+    } else {
+      console.log('[Init] Admin user from environment already exists in database.');
+    }
+  } catch (err: any) {
+    console.error('[Init Error] Failed to ensure admin from environment:', err);
+  }
+}
+
+// Run Initialization and Seeding
+async function initDatabase() {
+  if (process.env.NODE_ENV !== 'production') {
+    await seedDBIfEmpty();
+  } else {
+    // Schema Patch for backwards compatibility (ensuring columns exist in users table in production too)
+    try {
+      console.log('[Database Schema Sync Production] Ensuring newer/missing columns exist in users...');
+      await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "bonus_percent" double precision DEFAULT 0;`);
+      await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "notify_new_schedule" boolean DEFAULT true;`);
+      await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "notify_new_market" boolean DEFAULT true;`);
+      await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "notify_swap_requests" boolean DEFAULT true;`);
+      console.log('[Database Schema Sync Production] All user columns ensured successfully!');
+    } catch (patchErr: any) {
+      console.warn('[Database Schema Sync Warn] Failed to patch users columns: ' + patchErr.message);
+    }
+
+    try {
+      console.log('[Database Schema Sync Production] Ensuring notifications table exists...');
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS "notifications" (
+          "id" serial PRIMARY KEY,
+          "user_id" integer NOT NULL REFERENCES "users" ("id") ON DELETE CASCADE,
+          "title" text NOT NULL,
+          "message" text NOT NULL,
+          "is_read" boolean NOT NULL DEFAULT false,
+          "created_at" text NOT NULL
+        );
+      `);
+      console.log('[Database Schema Sync Production] Notifications table ensured!');
+    } catch (tableErr: any) {
+      console.warn('[Database Schema Sync Warn] Failed to ensure notifications table: ' + tableErr.message);
+    }
+  }
+
+  // Ensure we check and create env defined admin
+  await ensureAdminFromEnv();
+}
+
+initDatabase();
 
 
 /* ================== API ENDPOINTS ================== */
@@ -359,10 +439,32 @@ app.post('/api/login', loginLimiter, async (req, res) => {
       role: user.role
     };
     const access_token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '1d' });
-    res.json({ access_token, user: { id: user.id, full_name: user.fullName, role: user.role } });
+
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000
+    });
+
+    const claimsPayload = {
+      user_id: user.id,
+      email: user.email,
+      full_name: user.fullName,
+      role: user.role
+    };
+    const claims_token = Buffer.from(JSON.stringify(claimsPayload)).toString('base64');
+
+    res.json({ access_token: claims_token, user: { id: user.id, full_name: user.fullName, role: user.role } });
   } catch (err: any) {
     res.status(500).json({ error: 'Błąd logowania: ' + err.message });
   }
+});
+
+// Authentication: Logout
+app.post('/api/logout', (req, res) => {
+  res.clearCookie('access_token');
+  res.json({ success: true, message: 'Wylogowano' });
 });
 
 // Authentication: Register
@@ -373,51 +475,54 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: 'Wszystkie pola są wymagane' });
     }
 
+    if (!validatePassword(password)) {
+      return res.status(400).json({ error: 'Hasło jest za słabe (wymagane min. 8 znaków, w tym litera i cyfra)' });
+    }
+
     // Try to locate preloaded/existing worker profile
     const existingUser = await findUserByEmailAndName(email, full_name);
 
     if (existingUser) {
-      // Preloaded profile found! Update/activate password and link preferred email
-      await db.update(users).set({
-        email: email.toLowerCase().trim(),
-        passwordHash: hashPassword(password),
-        fullName: full_name.trim()
-      }).where(eq(users.id, existingUser.id));
-
-      res.json({ success: true, message: 'Konto zostało połączone z Twoim grafikiem. Zaloguj się.' });
-    } else {
-      // Create new account
-      await db.insert(users).values({
-        email: email.toLowerCase().trim(),
-        passwordHash: hashPassword(password),
-        fullName: full_name.trim(),
-        role: 'user',
-        hourlyRatePln: 28.10,
-        taxPercent: 12.0
+      return res.status(409).json({
+        error: 'Konto już istnieje. Skontaktuj się z administratorem.'
       });
-
-      res.json({ success: true, message: 'Konto zostało utworzone. Zaloguj się.' });
     }
+
+    // Create new account
+    await db.insert(users).values({
+      email: email.toLowerCase().trim(),
+      passwordHash: hashPassword(password),
+      fullName: full_name.trim(),
+      role: 'user',
+      hourlyRatePln: 28.10,
+      taxPercent: 12.0
+    });
+
+    res.json({ success: true, message: 'Konto zostało utworzone. Zaloguj się.' });
   } catch (err: any) {
     res.status(500).json({ error: 'Błąd rejestracji: ' + err.message });
   }
 });
 
 // Password change directly inside auth page before logging in
-app.post('/api/password/change-before-login', async (req, res) => {
+app.post('/api/password/change-before-login', loginLimiter, async (req, res) => {
   try {
     const { email, stare_haslo, nowe_haslo } = req.body;
     if (!email || !stare_haslo || !nowe_haslo) {
       return res.status(400).json({ error: 'Wszystkie pola są wymagane' });
     }
 
+    if (!validatePassword(nowe_haslo)) {
+      return res.status(400).json({ error: 'Hasło jest za słabe (wymagane min. 8 znaków, w tym litera i cyfra)' });
+    }
+
     const user = await findUserByEmailAndName(email);
     if (!user) {
-      return res.status(404).json({ error: 'Nieprawidłowy adres email' });
+      return res.status(400).json({ error: 'Nieprawidłowe dane' });
     }
 
     if (!verifyPassword(stare_haslo, user.passwordHash)) {
-      return res.status(400).json({ error: 'Błędne dotychczasowe hasło' });
+      return res.status(400).json({ error: 'Nieprawidłowe dane' });
     }
 
     await db.update(users).set({ passwordHash: hashPassword(nowe_haslo) }).where(eq(users.id, user.id));
@@ -434,6 +539,10 @@ app.post('/api/password/change', authGuard, async (req: AuthRequest, res) => {
     const user = req.user;
     if (!stare_haslo || !nowe_haslo) {
       return res.status(400).json({ error: 'Proszę podać stare i nowe hasło' });
+    }
+
+    if (!validatePassword(nowe_haslo)) {
+      return res.status(400).json({ error: 'Hasło jest za słabe (wymagane min. 8 znaków, w tym litera i cyfra)' });
     }
 
     if (!verifyPassword(stare_haslo, user.passwordHash)) {
@@ -609,7 +718,7 @@ app.post('/api/shifts/extra', authGuard, async (req: AuthRequest, res) => {
   try {
     const { date, shift_code, lounge, is_zmiwaka } = req.body;
     if (!date || !shift_code) {
-      return res.status(400).json({ error: 'Data i zmiana są wymagane' });
+      return res.status(400).json({ error: 'Data i код смены są wymagane' });
     }
 
     const info = getShiftTimeAndHours(shift_code, !!is_zmiwaka);
@@ -2137,6 +2246,11 @@ app.post('/api/control/late', authGuard, requireRole('admin', 'coordinator'), as
       return res.status(400).json({ error: 'Uzupełnij wymagane pola' });
     }
 
+    const targetUser = await db.select().from(users).where(eq(users.id, Number(user_id))).limit(1);
+    if (!targetUser || targetUser.length === 0) {
+      return res.status(404).json({ error: 'Użytkownik nie istnieje' });
+    }
+
     await db.insert(controlEvents).values({
       userId: Number(user_id),
       date: String(date),
@@ -2162,6 +2276,11 @@ app.post('/api/control/extra', authGuard, requireRole('admin', 'coordinator'), a
       return res.status(400).json({ error: 'Uzupełnij wymagane pola' });
     }
 
+    const targetUser = await db.select().from(users).where(eq(users.id, Number(user_id))).limit(1);
+    if (!targetUser || targetUser.length === 0) {
+      return res.status(404).json({ error: 'Użytkownik nie istnieje' });
+    }
+
     await db.insert(controlEvents).values({
       userId: Number(user_id),
       date: String(date),
@@ -2185,6 +2304,11 @@ app.post('/api/control/absence', authGuard, requireRole('admin', 'coordinator'),
       return res.status(400).json({ error: 'Uzupełnij wymagane pola' });
     }
 
+    const targetUser = await db.select().from(users).where(eq(users.id, Number(user_id))).limit(1);
+    if (!targetUser || targetUser.length === 0) {
+      return res.status(404).json({ error: 'Użytkownik nie istnieje' });
+    }
+
     await db.insert(controlEvents).values({
       userId: Number(user_id),
       date: String(date),
@@ -2205,6 +2329,11 @@ app.post('/api/control/add-shift', authGuard, requireRole('admin', 'coordinator'
     const { user_id, date, reason, from, to } = req.body;
     if (!user_id || !date || !from || !to) {
       return res.status(400).json({ error: 'Uzupełnij wymagane pola' });
+    }
+
+    const targetUser = await db.select().from(users).where(eq(users.id, Number(user_id))).limit(1);
+    if (!targetUser || targetUser.length === 0) {
+      return res.status(404).json({ error: 'Użytkownik nie istnieje' });
     }
 
     await db.insert(controlEvents).values({
@@ -2815,6 +2944,14 @@ function isShiftMorningOrEvening(code: string): { isMorning: boolean; isEvening:
 
 // Parser imports: Handle complex Excel sheets parsing directly using exceljs
 app.post('/api/upload-xlsx', authGuard, requireRole('admin', 'coordinator'), express.raw({ type: '*/*', limit: '20mb' }), async (req: AuthRequest, res) => {
+  if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+    return res.status(400).json({ error: 'Brak pliku' });
+  }
+
+  if (req.body.length > 10 * 1024 * 1024) {
+    return res.status(413).json({ error: 'Plik jest za duży (maksymalnie 10 MB)' });
+  }
+
   const monthHeader = req.headers['x-month'] || req.query.month;
   const yearHeader = req.headers['x-year'] || req.query.year;
 
