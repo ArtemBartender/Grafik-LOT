@@ -85,7 +85,9 @@ export default function BonusView({ currentDashboardMonth }: BonusViewProps) {
                 ) : (
                   <div className="space-y-3">
                     {entries.map((entry, i) => {
-                      const isMinus = entry.type === 'minus';
+                      const numVal = Number(entry.val);
+                      const isMinus = entry.type === 'minus' || numVal < 0;
+                      const absVal = Math.abs(numVal);
                       return (
                         <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-900/50 border border-slate-800/80 rounded-xl gap-4">
                           <div className="flex items-center gap-4">
@@ -100,9 +102,9 @@ export default function BonusView({ currentDashboardMonth }: BonusViewProps) {
                               </div>
                             </div>
                           </div>
-                          {entry.val && (
+                          {(entry.val !== undefined && entry.val !== null) && (
                             <div className={`flex-shrink-0 text-xl font-black ${isMinus ? 'text-red-400' : 'text-[var(--color-gold-light)]'}`}>
-                                {isMinus ? '-' : '+'}{entry.val}
+                                {isMinus ? '-' : '+'}{absVal}
                             </div>
                           )}
                         </div>
