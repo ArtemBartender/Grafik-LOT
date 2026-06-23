@@ -837,9 +837,9 @@ export default function App() {
               </div>
 
               {dashboardSubTab === 'statistics' ? (
-                <StatsView addToast={addToast} />
+                <StatsView addToast={addToast} currentDashboardMonth={dashboardMonth} />
               ) : dashboardSubTab === 'bonuses' ? (
-                <BonusView />
+                <BonusView currentDashboardMonth={dashboardMonth} />
               ) : (
                 <>
                   {/* MONTH CONTROLLER & GLASS SEGMENTS BAR */}
