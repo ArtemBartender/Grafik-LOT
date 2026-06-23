@@ -12,6 +12,7 @@ import ControlView from './components/ControlView';
 import AdminView from './components/AdminView';
 import FormatkaView from './components/FormatkaView';
 import SettingsView from './components/SettingsView';
+import BonusView from './components/BonusView';
 
 interface Toast {
   id: number;
@@ -77,7 +78,7 @@ export default function App() {
   const [dashboardMonth, setDashboardMonth] = useState<Date>(new Date(2026, 5, 1)); // June 2026 default seed alignment
   const [dashboardFilter, setDashboardFilter] = useState<'all' | 'rano' | 'popo'>('all');
   const [dashboardLayout, setDashboardLayout] = useState<'grid' | 'agenda'>('grid');
-  const [dashboardSubTab, setDashboardSubTab] = useState<'calendar' | 'statistics'>('calendar');
+  const [dashboardSubTab, setDashboardSubTab] = useState<'calendar' | 'statistics' | 'bonuses'>('calendar');
 
   // Change Password dialog (while logged in)
   const [showPassModal, setShowPassModal] = useState(false);
@@ -822,11 +823,23 @@ export default function App() {
                   >
                     <span>📊</span> Statystyki & Finanse
                   </button>
+                  <button
+                    onClick={() => setDashboardSubTab('bonuses')}
+                    className={`py-1 px-3 text-xs font-bold rounded-lg transition-all duration-300 flex items-center gap-1.5 ${
+                      dashboardSubTab === 'bonuses'
+                        ? 'bg-rose-500/15 text-rose-300 border border-rose-500/25 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <span>🎁</span> Moja Premia
+                  </button>
                 </div>
               </div>
 
               {dashboardSubTab === 'statistics' ? (
                 <StatsView addToast={addToast} />
+              ) : dashboardSubTab === 'bonuses' ? (
+                <BonusView />
               ) : (
                 <>
                   {/* MONTH CONTROLLER & GLASS SEGMENTS BAR */}
