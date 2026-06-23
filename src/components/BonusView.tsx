@@ -1,31 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore/lite';
-import { firebaseDb } from '../lib/firebase';
+import { fetchUserBonusForMonth, BonusEntry } from '../lib/firebase';
 import { currentClaims } from '../lib/api';
 
-const COLLECTION_NAME = 'premie_users'; 
-
-interface BonusEntry {
-  id: string;
-  comment: string;
-  val: number;
-  type: 'plus' | 'minus' | string;
-  date: string;
-  author?: string;
-  rejected?: boolean;
+interface BonusViewProps {
+  currentDashboardMonth?: Date;
 }
 
-export default function BonusView() {
+export default function BonusView({ currentDashboardMonth }: BonusViewProps) {
   const [loading, setLoading] = useState(true);
   const [errorItem, setErrorItem] = useState('');
   const [bonusTotal, setBonusTotal] = useState(0);
   const [entries, setEntries] = useState<BonusEntry[]>([]);
+  
+  // Default to today if prop not provided
+  const targetMonth = currentDashboardMonth || new Date();
+  const yearMonthPrefix = `${targetMonth.getFullYear()}-${String(targetMonth.getMonth() + 1).padStart(2, '0')}`;
+  const plLocalMonth = new Intl.DateTimeFormat('pl-PL', { month: 'long', year: 'numeric' }).format(targetMonth);
 
   useEffect(() => {
     fetchBonusData();
-  }, []);
+  }, [yearMonthPrefix]);
 
   const fetchBonusData = async () => {
+    setLoading(true);
+    setErrorItem('');
     try {
       const claims = currentClaims();
       if (!claims || !claims.full_name) {
@@ -34,40 +32,10 @@ export default function BonusView() {
         return;
       }
 
-      const usersCol = collection(firebaseDb, COLLECTION_NAME);
-      const snapshot = await getDocs(usersCol);
-
-      let foundData: any = null;
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.name === claims.full_name) {
-          foundData = data;
-        }
-      });
-
-      if (!foundData) {
-        setErrorItem('Nie znaleziono Twojego profilu w zewnętrznej bazie premii (premie_users).');
-      } else {
-        const rawEntries: BonusEntry[] = foundData.entries || [];
-        
-        // Filter out rejected entries
-        const validEntries = rawEntries.filter(e => !e.rejected);
-        // Sort from newest to oldest
-        const sortedEntries = validEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        setEntries(sortedEntries);
-        
-        // Compute total points sum
-        const total = sortedEntries.reduce((acc: number, val: BonusEntry) => {
-          if (val.val) {
-            const num = Number(val.val);
-            return val.type === 'minus' ? acc - num : acc + num;
-          }
-          return acc;
-        }, 0);
-        
-        setBonusTotal(Number(total.toFixed(2)));
-      }
+      const { entries: loadedEntries, totalPoints } = await fetchUserBonusForMonth(claims.full_name, yearMonthPrefix);
+      setEntries(loadedEntries);
+      setBonusTotal(totalPoints);
+      
     } catch (e: any) {
       console.error("Firebase fetch error:", e);
       setErrorItem('Problem z połączeniem do bazy premii. Skontaktuj się z adminem.');
@@ -85,13 +53,13 @@ export default function BonusView() {
         <div className="relative z-10 flex flex-col items-center">
           <h2 className="text-2xl sm:text-3xl font-black text-[var(--color-gold-light)] tracking-widest uppercase mb-2">Moja Premia</h2>
           <p className="text-sm text-slate-400 mb-8 max-w-md text-center">
-            Informacje o otrzymanych w tym miesiącu plusach, minusach i finalnej kwocie premii wyciągnięte z systemu koordynatorów.
+            Informacje o otrzymanych plusach i minusach w miesiącu <strong className="text-slate-200 capitalize">{plLocalMonth}</strong>. (Dane z systemu koordynatorów)
           </p>
 
           {loading ? (
             <div className="flex flex-col items-center py-10">
               <div className="w-10 h-10 border-4 border-[var(--color-gold)]/30 border-t-[var(--color-gold-light)] rounded-full animate-spin mb-4" />
-              <div className="text-slate-400 text-sm animate-pulse">Pobieranie bazy premii...</div>
+              <div className="text-slate-400 text-sm animate-pulse">Pobieranie bazy premii dla {plLocalMonth}...</div>
             </div>
           ) : errorItem ? (
              <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl max-w-lg w-full text-center">
@@ -100,17 +68,19 @@ export default function BonusView() {
           ) : (
             <div className="w-full space-y-6">
               <div className="bg-slate-950/50 border border-[var(--color-gold)]/30 rounded-2xl p-6 text-center shadow-[inset_0_0_20px_rgba(212,175,55,0.05)]">
-                <span className="block text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">Aktualne Punkty (Plusy/Minusy)</span>
+                <span className="block text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">Punkty za {plLocalMonth}</span>
                 <span className={`text-5xl sm:text-6xl font-black bg-gradient-to-br ${bonusTotal < 0 ? 'from-red-400 to-red-600' : 'from-yellow-300 to-[var(--color-gold-light)]'} bg-clip-text text-transparent drop-shadow-sm`}>
                   {bonusTotal > 0 ? '+' : ''}{bonusTotal} <span className="text-2xl text-slate-500 font-bold">pkt</span>
                 </span>
+                {bonusTotal > 0 && <p className="text-xs font-medium text-[var(--color-gold)]/80 mt-2">To daje Ci łącznie {(10 + bonusTotal).toFixed(2)}% finalnej premii miesięcznej.</p>}
+                {bonusTotal < 0 && <p className="text-xs font-medium text-red-400/80 mt-2">To daje Ci łącznie {(10 + bonusTotal).toFixed(2)}% finalnej premii miesięcznej.</p>}
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-lg font-bold text-white mb-4">Historia Zdarzeń</h3>
+                <h3 className="text-lg font-bold text-white mb-4">Historia Zdarzeń ({plLocalMonth})</h3>
                 {entries.length === 0 ? (
                   <div className="text-center text-slate-500 py-6 border border-dashed border-slate-700/50 rounded-xl">
-                    Aktualnie brak wpisów (plusów lub minusów).
+                    Brak zdarzeń (plusów/minusów) w tym miesiącu.
                   </div>
                 ) : (
                   <div className="space-y-3">
