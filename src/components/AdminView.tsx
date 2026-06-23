@@ -388,7 +388,7 @@ export default function AdminView({ addToast }: AdminViewProps) {
                                   ? 'bg-blue-500/10 border-blue-500/25 text-blue-400'
                                   : 'bg-slate-500/15 border-slate-700 text-slate-400'
                         }`}>
-                          {w.role === 'admin' ? 'Admin' : w.role === 'coordinator' ? 'Koordynator' : w.role === 'barman' ? 'Barman' : w.role === 'ofic' ? 'Ofic' : 'Pracownik'}
+                          {w.role === 'admin' ? 'Главный Админ' : w.role === 'coordinator' ? 'Координатор' : w.role === 'barman' ? 'Бармен' : w.role === 'ofic' ? 'Официант' : 'Змивак'}
                         </span>
                       </td>
                       <td className="py-3 px-3 text-right flex justify-end items-center gap-2">
@@ -397,11 +397,11 @@ export default function AdminView({ addToast }: AdminViewProps) {
                           onChange={(e) => handleRoleChange(w.id, e.target.value)}
                           className="px-2.5 py-1.5 border border-slate-800 bg-slate-950 rounded-xl text-[11px] font-bold text-slate-300 focus:outline-none focus:border-indigo-500"
                         >
-                          <option value="user">Pracownik (Waiters/Bar)</option>
-                          <option value="ofic">Ofic (Kolega na salonie)</option>
-                          <option value="barman">Barman</option>
-                          <option value="coordinator">Koordynator</option>
-                          <option value="admin">Główny Admin (Coordinator)</option>
+                          <option value="user">Змивак</option>
+                          <option value="ofic">Официант</option>
+                          <option value="barman">Бармен</option>
+                          <option value="coordinator">Координатор</option>
+                          <option value="admin">Главный Админ</option>
                         </select>
                         <button
                           onClick={() => handleResetPassword(w.id, w.fullName)}
