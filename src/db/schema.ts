@@ -8,8 +8,8 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash'),
   fullName: text('full_name').notNull(),
   role: text('role').notNull().default('user'), // 'user', 'coordinator', 'admin'
-  hourlyRatePln: doublePrecision('hourly_rate_pln').default(28.10),
-  taxPercent: doublePrecision('tax_percent').default(12.0),
+  hourlyRatePln: doublePrecision('hourly_rate_pln').default(20.00),
+  taxPercent: doublePrecision('tax_percent').default(0.0),
   bonusPercent: doublePrecision('bonus_percent').default(0.0),
   notifyNewSchedule: boolean('notify_new_schedule').default(true),
   notifyNewMarket: boolean('notify_new_market').default(true),
