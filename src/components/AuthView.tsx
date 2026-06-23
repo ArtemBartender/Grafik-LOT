@@ -44,18 +44,10 @@ export default function AuthView({ onLoginSuccess, addToast }: AuthViewProps) {
       return;
     }
     try {
-      const data = await apiCall('/api/login', {
+      await apiCall('/api/login', {
         method: 'POST',
         body: JSON.stringify({ email, password })
       });
-      const token = data.access_token;
-      if (rememberMe) {
-        localStorage.setItem('access_token', token);
-        sessionStorage.removeItem('access_token');
-      } else {
-        sessionStorage.setItem('access_token', token);
-        localStorage.removeItem('access_token');
-      }
       addToast('Zalogowano pomyślnie!', 'success');
       onLoginSuccess();
     } catch (err: any) {
