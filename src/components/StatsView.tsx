@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { apiCall, currentClaims } from '../lib/api';
-import { fetchUserBonusForMonth } from '../lib/firebase';
 
 interface StatsViewProps {
   currentDashboardMonth?: Date;
@@ -47,8 +46,12 @@ export default function StatsView({ currentDashboardMonth, addToast }: StatsView
       let extraBonusPoints = 0;
 
       if (claims && claims.full_name) {
-        const bd = await fetchUserBonusForMonth(claims.full_name, ym);
-        extraBonusPoints = bd.totalPoints;
+        try {
+          const bd = await apiCall(`/api/my-bonus?month=${ym}`);
+          extraBonusPoints = bd.totalPoints || 0;
+        } catch (e) {
+          console.error("Failed fetching bonus", e);
+        }
       }
 
       // 1. Fetch Rates Settings
