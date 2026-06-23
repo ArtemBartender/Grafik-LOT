@@ -8,6 +8,9 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
 
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, getDocs } from 'firebase/firestore/lite';
+
 import { db } from './src/db/index.ts';
 import { 
   users, shifts, notes, proposals, marketOffers, 
@@ -18,6 +21,24 @@ import { eq, and, or, like, desc, asc, sql } from 'drizzle-orm';
 import { authGuard, requireRole, AuthRequest } from './src/lib/auth-middleware.ts';
 
 const app = express();
+
+let firebaseDb: any = null;
+try {
+  if (process.env.FIREBASE_API_KEY) {
+    const firebaseConfig = {
+      apiKey: process.env.FIREBASE_API_KEY,
+      authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.FIREBASE_APP_ID
+    };
+    const fbApp = initializeApp(firebaseConfig);
+    firebaseDb = getFirestore(fbApp);
+  }
+} catch (e) {
+  console.log("Firebase init error:", e);
+}
 app.set('trust proxy', 1);
 app.use(express.json());
 
@@ -1479,6 +1500,59 @@ app.post('/api/market/offers/:id/reject', authGuard, async (req: AuthRequest, re
   }
 });
 
+
+// Bonus fetching from Firebase (via server)
+app.get('/api/my-bonus', authGuard, async (req: AuthRequest, res) => {
+  try {
+    const { month } = req.query; // YYYY-MM
+    if (!month || typeof month !== 'string') {
+      return res.status(400).json({ error: 'Brak miesiąca' });
+    }
+    if (!firebaseDb) {
+      // Return empty if Firebase is not configured
+      return res.json({ entries: [], totalPoints: 0 });
+    }
+
+    const fullName = req.user.fullName;
+    if (!fullName) {
+      return res.json({ entries: [], totalPoints: 0 });
+    }
+
+    const usersCol = collection(firebaseDb, 'premie_users');
+    const snapshot = await getDocs(usersCol);
+
+    let foundData: any = null;
+    snapshot.forEach(doc => {
+      if (doc.data().name === fullName) {
+        foundData = doc.data();
+      }
+    });
+
+    if (!foundData) return res.json({ entries: [], totalPoints: 0 });
+
+    const rawEntries: any[] = foundData.entries || [];
+    
+    // Filter out rejected and match the month prefix (e.g. "2026-06")
+    const validEntries = rawEntries.filter(e => !e.rejected && e.date?.startsWith(month));
+    const sortedEntries = validEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    const total = sortedEntries.reduce((acc: number, val: any) => {
+      if (val.val !== undefined && val.val !== null) {
+        const num = Number(val.val);
+        if (val.type === 'minus' && num > 0) {
+          return acc - num;
+        }
+        return acc + num;
+      }
+      return acc;
+    }, 0);
+
+    res.json({ entries: sortedEntries, totalPoints: Number(total.toFixed(2)) });
+  } catch (err: any) {
+    console.error('Błąd pobierania /api/my-bonus', err);
+    res.status(500).json({ error: 'Błąd podczas pobierania premii' });
+  }
+});
 
 // Statistics Calculations
 app.get('/api/my-stats', authGuard, async (req: AuthRequest, res) => {
