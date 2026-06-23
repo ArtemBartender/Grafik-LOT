@@ -572,6 +572,16 @@ app.post('/api/password/change', authGuard, async (req: AuthRequest, res) => {
 });
 
 // Users List for dropdowns
+app.get('/api/auth/me', authGuard, async (req: AuthRequest, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+  res.json({
+    user_id: req.user.id,
+    email: req.user.email,
+    full_name: req.user.fullName,
+    role: req.user.role
+  });
+});
+
 app.get('/api/users', authGuard, async (req: AuthRequest, res) => {
   try {
     const allUsers = await db.select().from(users);
