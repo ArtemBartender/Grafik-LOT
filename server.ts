@@ -1484,14 +1484,18 @@ app.post('/api/market/offers/:id/reject', authGuard, async (req: AuthRequest, re
 app.get('/api/my-stats', authGuard, async (req: AuthRequest, res) => {
   try {
     const user = req.user;
-    const { month } = req.query; // YYYY-MM
+    const { month, dynamicBonus } = req.query; // YYYY-MM
     if (!month) {
       return res.status(400).json({ error: 'Brak miesiąca' });
     }
 
     const rate = user.hourlyRatePln !== undefined && user.hourlyRatePln !== null ? user.hourlyRatePln : 28.10;
     const tax = user.taxPercent !== undefined && user.taxPercent !== null ? user.taxPercent : 12.0;
-    const bonus = user.bonusPercent !== undefined && user.bonusPercent !== null ? user.bonusPercent : 0.0;
+    
+    let bonus = user.bonusPercent !== undefined && user.bonusPercent !== null ? user.bonusPercent : 10.0;
+    if (dynamicBonus !== undefined) {
+      bonus = parseFloat(String(dynamicBonus));
+    }
 
     const monthPrefix = String(month);
     const userShifts = await db.select().from(shifts).where(
