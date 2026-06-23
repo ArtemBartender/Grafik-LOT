@@ -1,9 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { fetchUserBonusForMonth, BonusEntry } from '../lib/firebase';
-import { currentClaims } from '../lib/api';
+import { apiCall, currentClaims } from '../lib/api';
 
 interface BonusViewProps {
   currentDashboardMonth?: Date;
+}
+
+interface BonusEntry {
+  id: string;
+  comment: string;
+  val: number;
+  type: 'plus' | 'minus' | string;
+  date: string;
+  author?: string;
+  rejected?: boolean;
 }
 
 export default function BonusView({ currentDashboardMonth }: BonusViewProps) {
@@ -32,13 +41,13 @@ export default function BonusView({ currentDashboardMonth }: BonusViewProps) {
         return;
       }
 
-      const { entries: loadedEntries, totalPoints } = await fetchUserBonusForMonth(claims.full_name, yearMonthPrefix);
+      const { entries: loadedEntries, totalPoints } = await apiCall(`/api/my-bonus?month=${yearMonthPrefix}`);
       setEntries(loadedEntries);
       setBonusTotal(totalPoints);
       
     } catch (e: any) {
       console.error("Firebase fetch error:", e);
-      setErrorItem('Problem z połączeniem do bazy premii. Skontaktuj się z adminem.');
+      setErrorItem('Problem z pobieraniem premii z serwera. Skontaktuj się z adminem.');
     } finally {
       setLoading(false);
     }
