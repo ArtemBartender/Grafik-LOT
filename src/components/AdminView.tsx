@@ -172,6 +172,21 @@ export default function AdminView({ addToast }: AdminViewProps) {
     }
   };
 
+  const handleResetPassword = async (userId: number, userName: string) => {
+    if (!window.confirm(`Czy na pewno chcesz wyzerować hasło pracownika ${userName}? Nowe hasło zostanie ustawione na: password123`)) {
+      return;
+    }
+    
+    try {
+      await apiCall(`/api/admin/users/${userId}/reset-password`, {
+        method: 'POST'
+      });
+      addToast(`Hasło użytkownika ${userName} zresetowane na 'password123'`, 'success');
+    } catch (err: any) {
+      addToast(err.message || 'Błąd resetowania hasła', 'error');
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in max-w-5xl mx-auto px-4 py-2 font-sans">
       
@@ -345,7 +360,7 @@ export default function AdminView({ addToast }: AdminViewProps) {
                     <th className="py-2.5 px-3">Stawka h (PLN)</th>
                     <th className="py-2.5 px-3">Podatek (%)</th>
                     <th className="py-2.5 px-3">Aktualna rola</th>
-                    <th className="py-2.5 px-3 text-right">Zmień uprawnienia</th>
+                    <th className="py-2.5 px-3 text-right">Akcje</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-850/30">
@@ -370,7 +385,7 @@ export default function AdminView({ addToast }: AdminViewProps) {
                           {w.role === 'admin' ? 'Admin' : w.role === 'coordinator' ? 'Koordynator' : w.role === 'barman' ? 'Barman' : w.role === 'ofic' ? 'Ofic' : 'Pracownik'}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-right">
+                      <td className="py-3 px-3 text-right flex justify-end items-center gap-2">
                         <select
                           value={w.role}
                           onChange={(e) => handleRoleChange(w.id, e.target.value)}
@@ -382,6 +397,13 @@ export default function AdminView({ addToast }: AdminViewProps) {
                           <option value="coordinator">Koordynator</option>
                           <option value="admin">Główny Admin (Coordinator)</option>
                         </select>
+                        <button
+                          onClick={() => handleResetPassword(w.id, w.fullName)}
+                          className="px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-500 rounded-xl text-[11px] font-bold transition"
+                          title="Twardy reset hasła na 'password123'"
+                        >
+                          Reset
+                        </button>
                       </td>
                     </tr>
                   ))}
