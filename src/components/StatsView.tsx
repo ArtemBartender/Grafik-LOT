@@ -89,23 +89,6 @@ export default function StatsView({ currentDashboardMonth, addToast }: StatsView
     loadSettingsAndKPIs();
   }, [currentMonth]);
 
-  const handleSaveSettings = async () => {
-    try {
-      await apiCall('/api/me/settings', {
-        method: 'POST',
-        body: JSON.stringify({ 
-          hourly_rate_pln: rate === '' ? '' : parseFloat(String(rate)), 
-          tax_percent: tax === '' ? '' : parseFloat(String(tax)),
-          bonus_percent: baseBonus === '' ? '' : parseFloat(String(baseBonus))
-        })
-      });
-      addToast('Ustawienia i stawki zostały zapisane', 'success');
-      loadSettingsAndKPIs();
-    } catch (err: any) {
-      addToast(err.message || 'Błąd zapisu ustawień', 'error');
-    }
-  };
-
   const handlePostToMarket = async (shiftId: number) => {
     const shiftItem = myBriefShifts.find(x => x.id === shiftId);
     if (shiftItem) {
@@ -270,80 +253,16 @@ export default function StatsView({ currentDashboardMonth, addToast }: StatsView
 
       </div>
 
-      {/* PARAMETERS CONFIG PANEL Row */}
-      <div className="bg-slate-900/45 border border-slate-800/70 backdrop-blur-xl p-5 rounded-2xl shadow-xl">
-        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest font-mono flex items-center gap-2 mb-4">
-          <span>⚙️</span> Parametry rozliczeń i taryfy
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div className="opacity-75">
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
-              Stawka za godzinę (PLN brutto)
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                disabled
-                value={rate}
-                className="w-full bg-slate-950/60 border border-slate-850 text-slate-400 text-sm rounded-xl px-3.5 py-2.5 outline-none font-bold font-mono cursor-not-allowed"
-              />
-              <span className="absolute right-3.5 top-2.5 text-xs text-slate-600 font-bold">zł/h</span>
-            </div>
-          </div>
-
-          <div className="opacity-75">
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 tracking-wider">
-              Podatek i ZUS (%)
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                disabled
-                value={tax}
-                className="w-full bg-slate-950/60 border border-slate-850 text-slate-400 text-sm rounded-xl px-3.5 py-2.5 outline-none font-bold font-mono cursor-not-allowed"
-              />
-              <span className="absolute right-3.5 top-2.5 text-xs text-slate-600 font-bold">%</span>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-bold text-slate-100 uppercase mb-1.5 tracking-wider flex items-center gap-1.5">
-              <span>🌟</span> Baza Premii (%)
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                step="1"
-                min="0"
-                value={baseBonus}
-                onChange={(e) => setBaseBonus(e.target.value)}
-                className="w-full bg-slate-950/80 border border-indigo-500/40 focus:border-indigo-500 text-indigo-300 text-sm rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-550/30 font-bold font-mono"
-              />
-              <span className="absolute right-3.5 top-2.5 text-xs text-indigo-400 font-bold">%</span>
-            </div>
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-slate-100 uppercase mb-1.5 tracking-wider flex items-center gap-1.5 whitespace-nowrap">
-              <span>🎁</span> Punkty Z Zewn. Bazy
-            </label>
-            <div className={`p-2.5 rounded-xl border flex items-center font-bold text-sm bg-slate-950/40 cursor-not-allowed ${dynamicBonusPoints < 0 ? 'text-red-400 border-red-500/20' : dynamicBonusPoints > 0 ? 'text-[var(--color-gold-light)] border-[var(--color-gold)]/30' : 'text-slate-400 border-slate-800'}`}>
-               {dynamicBonusPoints > 0 ? '+' : ''}{dynamicBonusPoints} <span className="ml-1 text-[10px]">PKT</span>
-            </div>
-          </div>
+      {/* FINAL BONUS OVERVIEW */}
+      <div className="bg-slate-900/45 border border-[var(--color-gold)]/20 backdrop-blur-xl p-5 md:p-6 rounded-2xl shadow-[inset_0_0_20px_rgba(212,175,55,0.05)] border-l-4 border-l-[var(--color-gold)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+           <h3 className="text-xs sm:text-sm font-black text-white uppercase tracking-widest font-mono flex items-center gap-2 mb-1">
+             <span>🌟</span> Twoja premia z uwzględnieniem + i -:
+           </h3>
+           <p className="text-xs text-slate-400 font-medium">Baza ({baseBonus}%) {dynamicBonusPoints !== 0 ? (dynamicBonusPoints > 0 ? `+ punkty dodatnie (${dynamicBonusPoints})` : `- punkty ujemne (${Math.abs(dynamicBonusPoints)})`) : ''}</p>
         </div>
-
-        <div className="mt-4 pt-3 border-t border-slate-800/40 flex items-center justify-between gap-4">
-          <p className="text-[10px] text-slate-500 font-medium font-sans">
-            * Stawkę godzinową oraz podatek zmienisz od teraz w zakładce <strong className="text-slate-400">Settings ⚙️</strong> na górnym pasku.
-          </p>
-          <button
-            onClick={handleSaveSettings}
-            type="button"
-            className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-500 hover:to-blue-400 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-indigo-500/10 transition-all transform active:translate-y-0.5 whitespace-nowrap"
-          >
-            ✓ Zapisz premię
-          </button>
+        <div className={`text-4xl font-black bg-gradient-to-br ${Number(baseBonus) + Number(dynamicBonusPoints) < 0 ? 'from-red-400 to-red-600' : 'from-yellow-300 to-[var(--color-gold-light)]'} bg-clip-text text-transparent drop-shadow-sm whitespace-nowrap`}>
+          {(Number(baseBonus) + Number(dynamicBonusPoints)).toFixed(2)} %
         </div>
       </div>
 
