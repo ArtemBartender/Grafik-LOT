@@ -43,9 +43,12 @@ export async function fetchUserBonusForMonth(fullName: string, yearMonthPrefix: 
   const sortedEntries = validEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   
   const total = sortedEntries.reduce((acc: number, val: BonusEntry) => {
-    if (val.val) {
+    if (val.val !== undefined && val.val !== null) {
       const num = Number(val.val);
-      return val.type === 'minus' ? acc - num : acc + num;
+      if (val.type === 'minus' && num > 0) {
+        return acc - num;
+      }
+      return acc + num;
     }
     return acc;
   }, 0);
