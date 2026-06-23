@@ -392,9 +392,9 @@ function getShortEmailPrefix(email: string): string {
   if (parts.length >= 2) {
     const firstLetter = parts[0].substring(0, 1);
     const lastName = parts.slice(1).join('');
-    return `${firstLetter}.${lastName}`;
+    return `${firstLetter}${lastName}`;
   }
-  return clean;
+  return clean.replace(/[\.\-]/g, '');
 }
 
 // Helper to find existing user by email or name variation
