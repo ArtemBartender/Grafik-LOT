@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { apiCall, currentClaims } from '../lib/api';
+import { fetchUserBonusForMonth } from '../lib/firebase';
 
 interface StatsViewProps {
+  currentDashboardMonth?: Date;
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export default function StatsView({ addToast }: StatsViewProps) {
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date(2026, 5, 1)); // Default June 2026
+export default function StatsView({ currentDashboardMonth, addToast }: StatsViewProps) {
+  const [currentMonth, setCurrentMonth] = useState<Date>(currentDashboardMonth || new Date(2026, 5, 1)); // Default June 2026
 
   // KPI States
   const [hoursDone, setHoursDone] = useState(0);
@@ -18,7 +20,8 @@ export default function StatsView({ addToast }: StatsViewProps) {
   // Rate limits or inputs config state
   const [rate, setRate] = useState<number | string>(28.10);
   const [tax, setTax] = useState<number | string>(12);
-  const [bonus, setBonus] = useState<number | string>(0);
+  const [baseBonus, setBaseBonus] = useState<number | string>(10);
+  const [dynamicBonusPoints, setDynamicBonusPoints] = useState<number>(0);
 
   // Shifts list inside current month
   const [myBriefShifts, setMyBriefShifts] = useState<any[]>([]);
@@ -40,14 +43,29 @@ export default function StatsView({ addToast }: StatsViewProps) {
   const loadSettingsAndKPIs = async () => {
     const ym = getMonthPrefix();
     try {
+      const claims = currentClaims();
+      let extraBonusPoints = 0;
+
+      if (claims && claims.full_name) {
+        const bd = await fetchUserBonusForMonth(claims.full_name, ym);
+        extraBonusPoints = bd.totalPoints;
+      }
+
       // 1. Fetch Rates Settings
       const setInfo = await apiCall('/api/me/settings');
       if (setInfo.hourly_rate_pln != null) setRate(setInfo.hourly_rate_pln);
       if (setInfo.tax_percent != null) setTax(setInfo.tax_percent);
-      if (setInfo.bonus_percent != null) setBonus(setInfo.bonus_percent);
-
-      // 2. Fetch KPIs Stats
-      const kpiData = await apiCall(`/api/my-stats?month=${ym}`);
+      
+      let baseBonusVal = 10; // Default base is 10%
+      if (setInfo.bonus_percent != null) {
+        baseBonusVal = setInfo.bonus_percent;
+      }
+      setBaseBonus(baseBonusVal);
+      setDynamicBonusPoints(extraBonusPoints);
+      
+      const dynamicBonus = baseBonusVal + extraBonusPoints;
+      // 2. Fetch KPIs Stats using the dynamicBonus
+      const kpiData = await apiCall(`/api/my-stats?month=${ym}&dynamicBonus=${dynamicBonus}`);
       setHoursDone(kpiData.hours_done || 0);
       setHoursLeft(kpiData.hours_left || 0);
       setNetDone(kpiData.net_done || 0);
@@ -78,7 +96,7 @@ export default function StatsView({ addToast }: StatsViewProps) {
         body: JSON.stringify({ 
           hourly_rate_pln: rate === '' ? '' : parseFloat(String(rate)), 
           tax_percent: tax === '' ? '' : parseFloat(String(tax)),
-          bonus_percent: bonus === '' ? '' : parseFloat(String(bonus))
+          bonus_percent: baseBonus === '' ? '' : parseFloat(String(baseBonus))
         })
       });
       addToast('Ustawienia i stawki zostały zapisane', 'success');
@@ -291,18 +309,26 @@ export default function StatsView({ addToast }: StatsViewProps) {
 
           <div>
             <label className="block text-[10px] font-bold text-slate-100 uppercase mb-1.5 tracking-wider flex items-center gap-1.5">
-              <span>🌟</span> Premia i uznania (%)
+              <span>🌟</span> Baza Premii (%)
             </label>
             <div className="relative">
               <input
                 type="number"
                 step="1"
                 min="0"
-                value={bonus}
-                onChange={(e) => setBonus(e.target.value)}
+                value={baseBonus}
+                onChange={(e) => setBaseBonus(e.target.value)}
                 className="w-full bg-slate-950/80 border border-indigo-500/40 focus:border-indigo-500 text-indigo-300 text-sm rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-550/30 font-bold font-mono"
               />
               <span className="absolute right-3.5 top-2.5 text-xs text-indigo-400 font-bold">%</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-100 uppercase mb-1.5 tracking-wider flex items-center gap-1.5 whitespace-nowrap">
+              <span>🎁</span> Punkty Z Zewn. Bazy
+            </label>
+            <div className={`p-2.5 rounded-xl border flex items-center font-bold text-sm bg-slate-950/40 cursor-not-allowed ${dynamicBonusPoints < 0 ? 'text-red-400 border-red-500/20' : dynamicBonusPoints > 0 ? 'text-[var(--color-gold-light)] border-[var(--color-gold)]/30' : 'text-slate-400 border-slate-800'}`}>
+               {dynamicBonusPoints > 0 ? '+' : ''}{dynamicBonusPoints} <span className="ml-1 text-[10px]">PKT</span>
             </div>
           </div>
         </div>
