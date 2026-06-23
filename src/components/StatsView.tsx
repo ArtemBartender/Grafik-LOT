@@ -60,7 +60,7 @@ export default function StatsView({ currentDashboardMonth, addToast }: StatsView
       if (setInfo.tax_percent != null) setTax(setInfo.tax_percent);
       
       let baseBonusVal = 10; // Default base is 10%
-      if (setInfo.bonus_percent != null) {
+      if (setInfo.bonus_percent != null && setInfo.bonus_percent !== 0) {
         baseBonusVal = setInfo.bonus_percent;
       }
       setBaseBonus(baseBonusVal);
