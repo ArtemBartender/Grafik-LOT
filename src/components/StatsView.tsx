@@ -17,8 +17,8 @@ export default function StatsView({ currentDashboardMonth, addToast }: StatsView
   const [dailyHours, setDailyBars] = useState<any[]>([]);
   
   // Rate limits or inputs config state
-  const [rate, setRate] = useState<number | string>(28.10);
-  const [tax, setTax] = useState<number | string>(12);
+  const [rate, setRate] = useState<number | string>(20.00);
+  const [tax, setTax] = useState<number | string>(0);
   const [baseBonus, setBaseBonus] = useState<number | string>(10);
   const [dynamicBonusPoints, setDynamicBonusPoints] = useState<number>(0);
 
