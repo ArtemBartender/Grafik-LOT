@@ -1522,9 +1522,29 @@ app.get('/api/my-bonus', authGuard, async (req: AuthRequest, res) => {
     const snapshot = await getDocs(usersCol);
 
     let foundData: any = null;
+    
+    // Helper to normalize names (handles accents and ch/kh/y/i differences)
+    const normalizeName = (name: string) => {
+      return name.toLowerCase().normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/kh/g, "h")
+        .replace(/ch/g, "h")
+        .replace(/y/g, "i")
+        .replace(/[^a-z]/g, "");
+    };
+
+    const normFullName = normalizeName(fullName);
+
     snapshot.forEach(doc => {
       const dbName = doc.data().name || '';
-      if (dbName === fullName || dbName.includes(fullName) || fullName.includes(dbName)) {
+      const normDbName = normalizeName(dbName);
+
+      if (
+        dbName === fullName || 
+        dbName.includes(fullName) || 
+        fullName.includes(dbName) ||
+        (normDbName.length > 4 && normFullName.length > 4 && (normDbName.includes(normFullName) || normFullName.includes(normDbName)))
+      ) {
         foundData = doc.data();
       }
     });
