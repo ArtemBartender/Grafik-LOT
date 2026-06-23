@@ -2424,6 +2424,28 @@ app.post('/api/admin/users/:id/role', authGuard, requireRole('admin'), async (re
   }
 });
 
+app.post('/api/admin/users/:id/reset-password', authGuard, requireRole('admin'), async (req: AuthRequest, res) => {
+  try {
+    const userId = Number(req.params.id);
+    
+    // Hash default password 'password123'
+    const newPasswordHash = hashPassword('password123');
+
+    const updateRes = await db.update(users)
+      .set({ passwordHash: newPasswordHash })
+      .where(eq(users.id, userId))
+      .returning();
+      
+    if (updateRes.length === 0) {
+      return res.status(404).json({ error: 'Użytkownik nie istnieje' });
+    }
+
+    res.json({ success: true, message: 'Hasło zresetowane na: password123' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Błąd resetowania hasła: ' + err.message });
+  }
+});
+
 // --- HISTORIC TRADE LOGS (Who swapped with whom) ---
 // Returns audit trace of approved/completed swaps between employees. Only visible to root admin.
 app.get('/api/admin/swaps-log', authGuard, requireRole('admin'), async (req: AuthRequest, res) => {
