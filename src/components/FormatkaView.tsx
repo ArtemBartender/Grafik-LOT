@@ -629,7 +629,7 @@ export default function FormatkaView({ addToast, role, userId }: FormatkaViewPro
                           <div>
                             <h4 className="text-sm font-black text-slate-200">{user.fullName}</h4>
                             <p className="text-[10px] text-slate-500 font-mono uppercase mt-0.5">
-                              Rola: {user.role === 'coordinator' ? 'Koordynator' : 'Pracownik (Waiters/Bar)'}
+                              Rola: {user.role === 'admin' ? 'Admin' : user.role === 'coordinator' ? 'Koordynator' : user.role === 'barman' ? 'Barman' : user.role === 'ofic' ? 'Kelner' : 'Zmywak'}
                             </p>
                           </div>
                         </div>
