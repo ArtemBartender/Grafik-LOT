@@ -379,16 +379,18 @@ function getShortEmailPrefix(email: string): string {
 // Helper to find existing user by email or name variation
 async function findUserByEmailAndName(email: string, fullName?: string) {
   const cleanEmail = email.toLowerCase().trim();
+  const cleanEmailTolerant = cleanEmail.replace(/v/g, 'w'); // Tolerate v instead of w
   const inputShortPrefix = getShortEmailPrefix(cleanEmail);
+  const inputShortPrefixTolerant = getShortEmailPrefix(cleanEmailTolerant);
 
   const allDbUsers = await db.select().from(users);
 
   // 1. Direct email match
-  let matched = allDbUsers.find(u => u.email.toLowerCase().trim() === cleanEmail);
+  let matched = allDbUsers.find(u => u.email.toLowerCase().trim() === cleanEmail || u.email.toLowerCase().trim() === cleanEmailTolerant);
   if (matched) return matched;
 
   // 2. Short email prefix match (e.g. alicja.daniel@lot.pl matches a.daniel@lot.pl, f.czuba matches franciszek.czuba)
-  matched = allDbUsers.find(u => getShortEmailPrefix(u.email) === inputShortPrefix);
+  matched = allDbUsers.find(u => getShortEmailPrefix(u.email) === inputShortPrefix || getShortEmailPrefix(u.email) === inputShortPrefixTolerant);
   if (matched) return matched;
 
   // 3. Name to Company Email lookup
