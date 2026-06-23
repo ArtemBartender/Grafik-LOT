@@ -257,20 +257,14 @@ export default function App() {
 
   useEffect(() => {
     const checkAuthStatus = async () => {
-      const stored = getToken();
-      if (stored) {
-        try {
-          // Attempt to fetch settings to verify token validity
-          await apiCall('/api/me/settings');
-          setTokenState(stored);
-          setClaims(currentClaims());
-        } catch (e) {
-          console.error('Initial token verification failed, clearing session:', e);
-          removeToken();
-          setTokenState(null);
-          setClaims(null);
-        }
-      } else {
+      try {
+        const decoded = await apiCall('/api/auth/me');
+        import('./lib/api').then(m => m.setClaims(decoded));
+        setTokenState('cookie_auth');
+        setClaims(decoded);
+      } catch (e) {
+        console.error('Initial token verification failed, clearing session:', e);
+        removeToken();
         setTokenState(null);
         setClaims(null);
       }
@@ -290,7 +284,10 @@ export default function App() {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await apiCall('/api/logout', { method: 'POST' });
+    } catch(e) {}
     removeToken();
     setTokenState(null);
     setClaims(null);
@@ -298,12 +295,16 @@ export default function App() {
     addToast('Wylogowano pomyślnie z systemu', 'info');
   };
 
-  const handleLoginSuccess = () => {
-    const stored = getToken();
-    setTokenState(stored);
-    const decoded = currentClaims();
-    setClaims(decoded);
-    addToast(`Witaj z powrotem, ${decoded?.full_name || 'Użytkowniku'}!`, 'success');
+  const handleLoginSuccess = async () => {
+    try {
+      const decoded = await apiCall('/api/auth/me');
+      import('./lib/api').then(m => m.setClaims(decoded));
+      setTokenState('cookie_auth');
+      setClaims(decoded);
+      addToast(`Witaj z powrotem, ${decoded?.full_name || 'Użytkowniku'}!`, 'success');
+    } catch(e) {
+      addToast('Błąd podczas ładowania profilu.', 'error');
+    }
   };
 
   // Pull individual user shifts list inside Dashboard
