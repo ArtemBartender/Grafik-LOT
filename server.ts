@@ -1523,7 +1523,8 @@ app.get('/api/my-bonus', authGuard, async (req: AuthRequest, res) => {
 
     let foundData: any = null;
     snapshot.forEach(doc => {
-      if (doc.data().name === fullName) {
+      const dbName = doc.data().name || '';
+      if (dbName === fullName || dbName.includes(fullName) || fullName.includes(dbName)) {
         foundData = doc.data();
       }
     });
