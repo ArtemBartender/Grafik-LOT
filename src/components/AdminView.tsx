@@ -156,6 +156,8 @@ export default function AdminView({ addToast }: AdminViewProps) {
     }
   };
 
+  const [resetConfirmId, setResetConfirmId] = useState<number | null>(null);
+
   // Change employee role
   const handleRoleChange = async (userId: number, newRole: string) => {
     try {
@@ -173,7 +175,9 @@ export default function AdminView({ addToast }: AdminViewProps) {
   };
 
   const handleResetPassword = async (userId: number, userName: string) => {
-    if (!window.confirm(`Czy na pewno chcesz wyzerować hasło pracownika ${userName}? Nowe hasło zostanie ustawione na: password123`)) {
+    if (resetConfirmId !== userId) {
+      setResetConfirmId(userId);
+      setTimeout(() => setResetConfirmId(null), 3000);
       return;
     }
     
@@ -182,8 +186,10 @@ export default function AdminView({ addToast }: AdminViewProps) {
         method: 'POST'
       });
       addToast(`Hasło użytkownika ${userName} zresetowane na 'password123'`, 'success');
+      setResetConfirmId(null);
     } catch (err: any) {
       addToast(err.message || 'Błąd resetowania hasła', 'error');
+      setResetConfirmId(null);
     }
   };
 
@@ -399,10 +405,14 @@ export default function AdminView({ addToast }: AdminViewProps) {
                         </select>
                         <button
                           onClick={() => handleResetPassword(w.id, w.fullName)}
-                          className="px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-500 rounded-xl text-[11px] font-bold transition"
+                          className={`px-2.5 py-1.5 border rounded-xl text-[11px] font-bold transition ${
+                            resetConfirmId === w.id
+                            ? 'bg-red-500 border-red-500 text-white animate-pulse'
+                            : 'bg-red-500/10 hover:bg-red-500/20 border-red-500/25 text-red-500'
+                          }`}
                           title="Twardy reset hasła na 'password123'"
                         >
-                          Reset
+                          {resetConfirmId === w.id ? 'Potwierdź reset!' : 'Reset'}
                         </button>
                       </td>
                     </tr>
