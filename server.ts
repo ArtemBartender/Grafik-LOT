@@ -15,7 +15,7 @@ import { db } from './src/db/index.ts';
 import { 
   users, shifts, notes, proposals, marketOffers, 
   controlEvents, deletedEvents, coordinatorReports,
-  formatkaPreferences, formatkaLocks, notifications
+  formatkaPreferences, formatkaLocks, notifications, suggestions
 } from './src/db/schema.ts';
 import { eq, and, or, like, desc, asc, sql } from 'drizzle-orm';
 import { authGuard, requireRole, AuthRequest } from './src/lib/auth-middleware.ts';
@@ -1638,6 +1638,9 @@ app.get('/api/my-stats', authGuard, async (req: AuthRequest, res) => {
     if (dynamicBonus !== undefined) {
       bonus = parseFloat(String(dynamicBonus));
     }
+    if (bonus > 20) {
+      bonus = 20;
+    }
 
     const monthPrefix = String(month);
     const userShifts = await db.select().from(shifts).where(
@@ -2534,6 +2537,81 @@ app.post('/api/notifications/read-all', authGuard, async (req: AuthRequest, res)
     res.status(500).json({ error: 'Błąd markowania powiadomień: ' + err.message });
   }
 });
+
+// --- SUGGESTIONS BOX (POCZTA ZAUFANIA) ---
+app.post('/api/suggestions', authGuard, async (req: AuthRequest, res) => {
+  try {
+    const user = req.user;
+    const { text } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: 'Treść zgłoszenia nie może być pusta' });
+    }
+
+    await db.insert(suggestions).values({
+      userId: user.id,
+      text: text.trim(),
+      createdAt: new Date().toISOString()
+    });
+
+    res.json({ success: true, message: 'Dziękujemy za przesłanie zgłoszenia!' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Błąd dodawania zgłoszenia: ' + err.message });
+  }
+});
+
+app.get('/api/suggestions', authGuard, requireRole('admin', 'coordinator'), async (req: AuthRequest, res) => {
+  try {
+    const user = req.user;
+    // Artem's email is bilenckotema10@gmail.com. We can also check if email starts with bilenckotema or contains artem
+    const isArtem = user.email === 'bilenckotema10@gmail.com' || user.email.toLowerCase().includes('bilenckotema');
+
+    const rawList = await db.select({
+      id: suggestions.id,
+      text: suggestions.text,
+      createdAt: suggestions.createdAt,
+      userId: suggestions.userId,
+      authorName: users.fullName,
+      authorEmail: users.email
+    })
+    .from(suggestions)
+    .innerJoin(users, eq(suggestions.userId, users.id))
+    .orderBy(desc(suggestions.createdAt));
+
+    const anonymizedList = rawList.map(item => {
+      if (isArtem) {
+        return item;
+      } else {
+        return {
+          id: item.id,
+          text: item.text,
+          createdAt: item.createdAt,
+          userId: null,
+          authorName: 'Anonimowy pracownik',
+          authorEmail: null
+        };
+      }
+    });
+
+    res.json(anonymizedList);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Błąd pobierania zgłoszeń: ' + err.message });
+  }
+});
+
+app.delete('/api/suggestions/:id', authGuard, requireRole('admin', 'coordinator'), async (req: AuthRequest, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Niepoprawne ID' });
+    }
+
+    await db.delete(suggestions).where(eq(suggestions.id, id));
+    res.json({ success: true, message: 'Usunięto zgłoszenie' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Błąd usuwania zgłoszenia: ' + err.message });
+  }
+});
+
 
 // --- ADMIN USERS & ROLE MANAGEMENT ---
 // Only admin can see and edit these.
@@ -3455,6 +3533,20 @@ app.post('/api/upload-xlsx', authGuard, requireRole('admin', 'coordinator'), exp
 
 // Serve static assets and handle routing via Vite middleware
 async function startServer() {
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS suggestions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        text TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    `);
+    console.log('[Database] Verified suggestions table exists.');
+  } catch (err) {
+    console.error('[Database] Failed to ensure suggestions table:', err);
+  }
+
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
