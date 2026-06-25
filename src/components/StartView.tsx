@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiCall, currentClaims } from '../lib/api';
+import SuggestionsBox from './SuggestionsBox';
 
 interface StartViewProps {
   addToast: (msg: string, type?: 'success' | 'error' | 'info') => void;
@@ -274,6 +275,9 @@ export default function StartView({ addToast, onNavigate }: StartViewProps) {
           )}
         </div>
       </section>
+
+      {/* SUGGESTIONS BOX */}
+      <SuggestionsBox addToast={addToast} />
     </div>
   );
 }
