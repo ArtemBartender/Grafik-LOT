@@ -81,8 +81,8 @@ export default function BonusView({ currentDashboardMonth }: BonusViewProps) {
                 <span className={`text-5xl sm:text-6xl font-black bg-gradient-to-br ${bonusTotal < 0 ? 'from-red-400 to-red-600' : 'from-yellow-300 to-[var(--color-gold-light)]'} bg-clip-text text-transparent drop-shadow-sm`}>
                   {bonusTotal > 0 ? '+' : ''}{bonusTotal} <span className="text-2xl text-slate-500 font-bold">pkt</span>
                 </span>
-                {bonusTotal > 0 && <p className="text-xs font-medium text-[var(--color-gold)]/80 mt-2">To daje Ci łącznie {(10 + bonusTotal).toFixed(2)}% finalnej premii miesięcznej.</p>}
-                {bonusTotal < 0 && <p className="text-xs font-medium text-red-400/80 mt-2">To daje Ci łącznie {(10 + bonusTotal).toFixed(2)}% finalnej premii miesięcznej.</p>}
+                {bonusTotal > 0 && <p className="text-xs font-medium text-[var(--color-gold)]/80 mt-2">To daje Ci łącznie {Math.min(20, 10 + bonusTotal).toFixed(2)}% finalnej premii miesięcznej.</p>}
+                {bonusTotal < 0 && <p className="text-xs font-medium text-red-400/80 mt-2">To daje Ci łącznie {Math.min(20, 10 + bonusTotal).toFixed(2)}% finalnej premii miesięcznej.</p>}
               </div>
 
               <div className="space-y-4">
