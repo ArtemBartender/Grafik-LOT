@@ -2562,8 +2562,13 @@ app.post('/api/suggestions', authGuard, async (req: AuthRequest, res) => {
 app.get('/api/suggestions', authGuard, requireRole('admin', 'coordinator'), async (req: AuthRequest, res) => {
   try {
     const user = req.user;
-    // Artem's email is bilenckotema10@gmail.com. We can also check if email starts with bilenckotema or contains artem
-    const isArtem = user.email === 'bilenckotema10@gmail.com' || user.email.toLowerCase().includes('bilenckotema');
+    const emailLower = (user.email || '').toLowerCase();
+    const fullNameLower = (user.fullName || '').toLowerCase();
+    const isArtem = emailLower === 'bilenckotema10@gmail.com' ||
+                    emailLower.includes('bilenckotema') ||
+                    emailLower === 'a.bilenko@lot.pl' ||
+                    emailLower.includes('bilenko') ||
+                    (fullNameLower.includes('artem') && fullNameLower.includes('bilenko'));
 
     const rawList = await db.select({
       id: suggestions.id,
