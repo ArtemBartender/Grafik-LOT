@@ -465,8 +465,8 @@ app.post('/api/login', loginLimiter, async (req, res) => {
 
     res.cookie('access_token', access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
       maxAge: 24 * 60 * 60 * 1000
     });
 
@@ -478,7 +478,11 @@ app.post('/api/login', loginLimiter, async (req, res) => {
 
 // Authentication: Logout
 app.post('/api/logout', (req, res) => {
-  res.clearCookie('access_token');
+  res.clearCookie('access_token', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none'
+  });
   res.json({ success: true, message: 'Wylogowano' });
 });
 
@@ -1043,6 +1047,39 @@ app.post('/api/proposals', authGuard, async (req: AuthRequest, res) => {
     const todayISO = new Date().toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' }).split('.').reverse().join('-');
     if (String(my_date) <= todayISO || String(their_date) <= todayISO) {
       return res.status(400).json({ error: 'Zaproponowana wymiana musi dotyczyć wyłącznie dni przyszłych (od jutra).' });
+    }
+
+    // New validation rules requested by user:
+    const sameDay = String(my_date) === String(their_date);
+    if (!sameDay) {
+      // 1. Check if requester already works on their_date
+      const requesterShiftsOnTheirDate = await db.select().from(shifts).where(
+        and(
+          eq(shifts.userId, user.id),
+          eq(shifts.shiftDate, String(their_date))
+        )
+      );
+      if (requesterShiftsOnTheirDate.length > 0) {
+        return res.status(400).json({ error: 'Pracujesz już w dniu, na który chcesz wymienić zmianę.' });
+      }
+
+      // 2. Check if target user already works on my_date
+      const targetShiftsOnMyDate = await db.select().from(shifts).where(
+        and(
+          eq(shifts.userId, Number(target_user_id)),
+          eq(shifts.shiftDate, String(my_date))
+        )
+      );
+      if (targetShiftsOnMyDate.length > 0) {
+        return res.status(400).json({ error: 'Pracownik docelowy pracuje już w dniu, w którym oferujesz mu zmianę.' });
+      }
+    } else {
+      // If same day swap, check if they are in the same lounge/morning/evening slot
+      const myLoungeGroup = String(myShifts[0].shiftCode).trim().startsWith('2') ? '2' : '1';
+      const theirLoungeGroup = String(theirShifts[0].shiftCode).trim().startsWith('2') ? '2' : '1';
+      if (myLoungeGroup === theirLoungeGroup) {
+        return res.status(400).json({ error: 'Nie można zamienić zmian w tym samym slocie na tej samej strefie tego samego dnia.' });
+      }
     }
 
     const inserted = await db.insert(proposals).values({
