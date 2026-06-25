@@ -195,10 +195,25 @@ export const notifications = pgTable('notifications', {
   createdAt: text('created_at').notNull(), // ISO String
 });
 
+export const suggestions = pgTable('suggestions', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  text: text('text').notNull(),
+  createdAt: text('created_at').notNull(), // ISO String
+});
+
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(users, {
     fields: [notifications.userId],
     references: [users.id],
   }),
 }));
+
+export const suggestionsRelations = relations(suggestions, ({ one }) => ({
+  user: one(users, {
+    fields: [suggestions.userId],
+    references: [users.id],
+  }),
+}));
+
 
