@@ -22,7 +22,13 @@ export default function SuggestionsBox({ addToast }: SuggestionsBoxProps) {
   
   const claims = currentClaims();
   const isAdminOrCoordinator = claims?.role === 'admin' || claims?.role === 'coordinator';
-  const isArtem = claims?.email === 'bilenckotema10@gmail.com' || claims?.email?.toLowerCase()?.includes('bilenckotema');
+  const emailLower = (claims?.email || '').toLowerCase();
+  const fullNameLower = (claims?.full_name || '').toLowerCase();
+  const isArtem = emailLower === 'bilenckotema10@gmail.com' ||
+                  emailLower.includes('bilenckotema') ||
+                  emailLower === 'a.bilenko@lot.pl' ||
+                  emailLower.includes('bilenko') ||
+                  (fullNameLower.includes('artem') && fullNameLower.includes('bilenko'));
 
   const fetchSuggestions = async () => {
     if (!isAdminOrCoordinator) return;
