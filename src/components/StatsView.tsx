@@ -66,7 +66,7 @@ export default function StatsView({ currentDashboardMonth, addToast }: StatsView
       setBaseBonus(baseBonusVal);
       setDynamicBonusPoints(extraBonusPoints);
       
-      const dynamicBonus = baseBonusVal + extraBonusPoints;
+      const dynamicBonus = Math.min(20, baseBonusVal + extraBonusPoints);
       // 2. Fetch KPIs Stats using the dynamicBonus
       const kpiData = await apiCall(`/api/my-stats?month=${ym}&dynamicBonus=${dynamicBonus}`);
       setHoursDone(kpiData.hours_done || 0);
@@ -264,7 +264,7 @@ export default function StatsView({ currentDashboardMonth, addToast }: StatsView
            </h3>
         </div>
         <div className={`text-4xl font-black bg-gradient-to-br ${Number(baseBonus) + Number(dynamicBonusPoints) < 0 ? 'from-red-400 to-red-600' : 'from-yellow-300 to-[var(--color-gold-light)]'} bg-clip-text text-transparent drop-shadow-sm whitespace-nowrap`}>
-          {(Number(baseBonus) + Number(dynamicBonusPoints)).toFixed(2)} %
+          {Math.min(20, Number(baseBonus) + Number(dynamicBonusPoints)).toFixed(2)} %
         </div>
       </div>
 
