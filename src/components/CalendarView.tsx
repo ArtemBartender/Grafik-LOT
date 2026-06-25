@@ -649,7 +649,7 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
       </section>
 
       {/* SWAP RECIPIENT CHOICE MODAL */}
-      {showSwapModal && swapTargetPerson && swapTargetDateIso && (
+      {showSwapModal && swapTargetPerson && swapTargetDateIso && createPortal(
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl relative">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-800">
@@ -742,7 +742,8 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
