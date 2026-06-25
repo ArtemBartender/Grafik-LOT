@@ -149,6 +149,15 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
     return !myShiftsMap.has(dateIso);
   };
 
+  const doesUserWorkOnDate = (userId: string | number, dateIso: string): boolean => {
+    const dayData = bulkMonthData[dateIso];
+    if (!dayData) return false;
+    const morningList = dayData.morning || [];
+    const eveningList = dayData.evening || [];
+    return morningList.some(p => String(p.user_id) === String(userId)) || 
+           eveningList.some(p => String(p.user_id) === String(userId));
+  };
+
   // Direct Claim/Takeover shift trigger
   const handleTakeoverClaim = async (person: any, dateIso: string) => {
     if (!isDirectTakeoverAllowed(dateIso)) {
@@ -640,8 +649,8 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
       </section>
 
       {/* SWAP RECIPIENT CHOICE MODAL */}
-      {showSwapModal && swapTargetPerson && swapTargetDateIso && createPortal(
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-100 animate-fade-in">
+      {showSwapModal && swapTargetPerson && swapTargetDateIso && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl relative">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-800">
               <h3 className="text-base font-extrabold text-slate-200">
@@ -668,8 +677,26 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
                   const myLoungeGroup = String(s.shift_code).trim().startsWith('2') ? '2' : '1';
                   const sameDay = s.shift_date === swapTargetDateIso;
                   
-                  // Cannot work 2 full shifts same day on same layout
-                  const disabled = sameDay && targetLoungeGroup === myLoungeGroup;
+                  // Cannot work 2 full shifts same day on same layout/lounge
+                  const targetWorksOnMyDate = !sameDay && doesUserWorkOnDate(swapTargetPerson.user_id, s.shift_date);
+                  const IWorkOnTheirDate = !sameDay && myShiftsMap.has(swapTargetDateIso);
+
+                  const disabled = sameDay 
+                    ? (targetLoungeGroup === myLoungeGroup)
+                    : (targetWorksOnMyDate || IWorkOnTheirDate);
+
+                  let disabledLabel = 'Wybierz';
+                  if (disabled) {
+                    if (sameDay && targetLoungeGroup === myLoungeGroup) {
+                      disabledLabel = 'Ten sam slot';
+                    } else if (targetWorksOnMyDate) {
+                      disabledLabel = 'Pracuje już wtedy';
+                    } else if (IWorkOnTheirDate) {
+                      disabledLabel = 'Pracujesz już wtedy';
+                    } else {
+                      disabledLabel = 'Niedozwolona';
+                    }
+                  }
 
                   return (
                     <div 
@@ -694,11 +721,11 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
                         onClick={() => submitSwapProposal(s.shift_date)}
                         className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
                           disabled
-                            ? 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-800'
+                            ? 'bg-slate-800 text-slate-650 cursor-not-allowed border border-slate-800'
                             : 'bg-gradient-to-r from-blue-500 to-emerald-500 text-slate-950 hover:opacity-90 active:scale-95'
                         }`}
                       >
-                        {disabled ? 'Niedozwolony ten sam slot' : 'Wybierz'}
+                        {disabled ? disabledLabel : 'Wybierz'}
                       </button>
                     </div>
                   );
@@ -715,8 +742,7 @@ export default function CalendarView({ addToast, onNavigate }: CalendarViewProps
               </button>
             </div>
           </div>
-        </div>,
-        document.body
+        </div>
       )}
     </div>
   );
